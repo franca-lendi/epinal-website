@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8"> --für umlaute--
+        <meta name="viewport" content="width=device-width, initial-scale=1"> --handy
+        <title>{% block title %}Épinal Guide{% endblock %}</title> --namen überlegen
+        <link rel="stylesheet" href="{% static 'guide/style.css' %}">
+    </head>
+    <body>
+        <header>
+            <a href="{% url 'home' %}" class="logo">Épinal Guide</a>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        <footer>
+            <p>Maturaarbeit 2026</p>
+        </footer>
+    </body>
+</html>
