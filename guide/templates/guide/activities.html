@@ -1,0 +1,252 @@
+{% extends "guide/base.html" %} <!-- aufbauen darauf -->
+
+{% block title %}Aktivitäten – Épinal Guide{% endblock %} <!-- gleiche da -->
+
+{% block content %} <!-- jetzt rein wo zwischen main bei base steht -->
+
+<div class="container-fluid"> <!-- container-fluid=fast ganze Bildschirmfläche -->
+
+    <!-- Suchleiste -->
+    <div class="row mb-4"> <!-- container, row, col/ mb-4= marchin-bottom 4 -->
+        <div class="col"> <!-- container, col, row -->
+            <input
+                type="text"
+                class="form-control form-control-lg" 
+                placeholder="🔎 Suche nach Aktivitäten..."
+            > <!-- form-control = eingabefeld lg= large  -->
+        </div>
+    </div>
+
+<!-- Filter -->
+<div class="row g-2 mb-5">
+
+    <!-- Kategorie -->
+    <div class="col"> <!-- jeder filter eigene spalte -->
+        <button
+            class="btn btn-outline-secondary w-100" 
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#kategorieFilter"
+        > <!-- bootstrap, nimmt gesamte breite der spalte ein/ bootstrap auf und zu klappen -->
+        <!-- was aufgeklappt hashtag heisst sucht nach element mit dieser id -->
+            Kategorie ▼
+        </button>
+
+        <div class="collapse mt-2" id="kategorieFilter"> <!-- das hier aufklappen -->
+            <div class="border rounded p-3"> <!-- p=padding innenabstand -->
+
+                <div class="form-check"> <!-- bootstrap für checkbox -->
+                    <input class="form-check-input" type="checkbox" id="sport"> <!-- bootstrap gestlalted, type und id -->
+                    <label class="form-check-label" for="sport"> <!-- dann label dafür Sport -->
+                        Sport
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="2">
+                    <label class="form-check-label" for="2">
+                        2
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="3">
+                    <label class="form-check-label" for="3">
+                        3
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="4">
+                    <label class="form-check-label" for="4">
+                        4
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Datum -->
+    <div class="col">
+        <button
+            class="btn btn-outline-secondary w-100"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#datumFilter"
+        >
+            Datum ▼
+        </button>
+
+        <div class="collapse mt-2" id="datumFilter">
+            <div class="border rounded p-3">
+
+                <label class="form-label small text-muted">
+                    Von
+                </label>
+
+                <input
+                    type="date"
+                    class="form-control mb-2"
+                >
+                <!-- type datumsfeld -->
+
+                <label class="form-label small text-muted">
+                    Bis
+                </label>
+
+                <input
+                    type="date"
+                    class="form-control"
+                >
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Preis -->
+    <div class="col">
+        <button
+            class="btn btn-outline-secondary w-100"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#preisFilter"
+        >
+            Preis ▼
+        </button>
+
+        <div class="collapse mt-2" id="preisFilter">
+            <div class="border rounded p-3">
+
+                <input
+                    type="range"
+                    class="form-range"
+                    min="0"
+                    max="100"
+                    value="100"
+                >
+<!-- type schiebeding, form-range bootstrap, value= startwert -->
+                <div class="d-flex justify-content-between"> <!-- möglichst weit auseinander -->
+                    <span>0 €</span>
+                    <span>100 €</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Distanz -->
+    <div class="col">
+        <button
+            class="btn btn-outline-secondary w-100"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#distanzFilter"
+        >
+            Distanz ▼
+        </button>
+
+        <div class="collapse mt-2" id="distanzFilter">
+            <div class="border rounded p-3">
+
+                <input
+                    type="range"
+                    class="form-range"
+                    min="0"
+                    max="20"
+                    value="20"
+                >
+
+                <div class="d-flex justify-content-between">
+                    <span>0 km</span>
+                    <span>20 km</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Anwenden -->
+    <div class="col-auto"> <!-- so vile wie brauhct -->
+        <button class="btn btn-primary">
+            Anwenden
+        </button>
+    </div>
+
+    <!-- Aktivitäten -->
+
+<h2 class="mb-0">Alle Aktivitäten</h2>
+
+<div class="row g-3"> <!-- bootstrap zeile mit abstand 4 -->
+
+    <!-- Aktivität 1 -->
+    <div class="col-md-6 col-lg-4"> <!-- responsiv -->
+
+        <div class="card h-100">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+                    Tennis-Turnier
+                </h5>
+
+                <p class="card-text">
+                    Ein Tennisturnier in Épinal.
+                </p>
+
+                <p class="text-muted"> <!-- muted grauer -->
+                    📅 12. Oktober<br> <!-- br = zeilenumbruch -->
+                    💰 Kostenlos<br>
+                    📍 2,3 km
+                </p>
+
+                <a href="#" class="btn btn-outline-primary">
+                    Mehr erfahren
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Aktivität 2 -->
+    <div class="col-md-6 col-lg-4">
+
+        <div class="card h-100">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+                    Stadtführung
+                </h5>
+
+                <p class="card-text">
+                    Entdecke die Altstadt von Épinal.
+                </p>
+
+                <p class="text-muted">
+                    📅 14. Oktober<br>
+                    💰 8 €<br>
+                    📍 1,1 km
+                </p>
+
+                <a href="#" class="btn btn-outline-primary">
+                    Mehr erfahren
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+{% endblock %}
