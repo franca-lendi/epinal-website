@@ -31,9 +31,10 @@
     background: var(--bg);
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
-    overflow-x: auto;
 }
 .nav-left, .nav-right { display: flex; align-items: center; gap: 1.8rem; white-space: nowrap; }
+.nav-left { overflow-x: auto; }
+
 .main-nav a {
     padding: 1rem 0;
     color: var(--text);
@@ -70,6 +71,7 @@
     min-height: 40px;
 }
 
+/* Aktivitäten-Karte */
 .card-img-wrapper { position: relative; }
 .card-img-wrapper img { height: 180px; object-fit: cover; }
 
@@ -89,3 +91,24 @@
 
 .activity-card { transition: transform 0.15s; }
 .activity-card:hover { transform: translateY(-3px); }
+
+/* Anmelden-Button wie die anderen Menüpunkte */
+.login-btn {
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    color: var(--accent);
+    font-weight: 500;
+    cursor: pointer;
+}
+.login-btn:hover { background: var(--accent); color: #fff; }
+
+/* X links oben statt rechts */
+.modal-header .btn-close { margin: 0 0.5rem 0 0; }
+
+/* Dropdown-Einträge nicht wie Menüpunkte formatieren */
+.main-nav .dropdown-item {
+    padding: 0.5rem 1rem;
+    border-bottom: none;
+}

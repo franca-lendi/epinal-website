@@ -19,7 +19,7 @@
     <!-- Obere Zeile (verschwindet beim Scrollen) -->
     <div class="top-bar">
         <p class="tagline">Der Aktivitäten-Guide für Épinal,<br>von Jugendlichen für Jugendliche.</p>
-        <a href="{% url 'home' %}" class="logo">
+        <a href="{% url 'activities' %}" class="logo">
             <img src="{% static 'guide/logo.png' %}" alt="Titel"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
             <span style="display:none;">Titel1</span>
@@ -39,9 +39,34 @@
             <a href="{% url 'add_activity' %}" class="add-btn">+ Hinzufügen</a>
         </div>
         <div class="nav-right">
-            <button class="language-button">DE / FR</button>
-            <a href="#" class="profile-link">Profil</a>
+    <button class="language-button">DE / FR</button>
+
+    {% if user.is_authenticated %}
+        <!-- Eingeloggt: Profil mit Dropdown -->
+        <div class="dropdown">
+            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                Profil
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><span class="dropdown-item-text text-muted small">{{ user.username }}</span></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#">Mein Profil</a></li>
+                <li><a class="dropdown-item" href="#">Deine Uploads</a></li>
+                <li>
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item">Abmelden</button>
+                    </form>
+                </li>
+            </ul>
         </div>
+    {% else %}
+        <!-- Nicht eingeloggt: Button öffnet das Pop-up -->
+        <button type="button" class="login-btn" data-bs-toggle="modal" data-bs-target="#loginModal">
+            Login
+        </button>
+    {% endif %}
+</div>
     </nav>
 
     <!-- Inhalt der jeweiligen Seite -->
@@ -49,6 +74,170 @@
         {% block content %}{% endblock %}
     </main>
 
+{% if not user.is_authenticated %}
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+        <h5 class="modal-title ms-3" id="loginModalLabel">Anmelden</h5>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Ansicht 1: Anmelden -->
+        <div id="loginPane">
+  <div id="loginErrors" class="alert alert-danger d-none"></div>
+
+  <form method="post" action="{% url 'login' %}" id="loginForm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label for="modal_username" class="form-label">Benutzername</label>
+      <input type="text" name="username" id="modal_username" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="modal_password" class="form-label">Passwort</label>
+      <input type="password" name="password" id="modal_password" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Anmelden</button>
+  </form>
+
+  <p class="text-center mt-3 mb-0">
+    Noch kein Konto?
+    <button type="button" id="showRegister" class="btn btn-link p-0 align-baseline">Registrieren</button>
+  </p>
+</div>
+
+        <!-- Ansicht 2: Registrieren -->
+        <div id="registerPane" class="d-none">
+          <div id="registerErrors" class="alert alert-danger d-none"></div>
+
+          <form method="post" action="{% url 'register' %}" id="registerForm">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="reg_username" class="form-label">Benutzername</label>
+              <input type="text" name="username" id="reg_username" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="reg_email" class="form-label">E-Mail</label>
+              <input type="email" name="email" id="reg_email" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="reg_password1" class="form-label">Passwort</label>
+              <input type="password" name="password1" id="reg_password1" class="form-control" required>
+              <div class="form-text">Mindestens 8 Zeichen.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="reg_password2" class="form-label">Passwort wiederholen</label>
+              <input type="password" name="password2" id="reg_password2" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Registrieren</button>
+          </form>
+
+          <p class="text-center mt-3 mb-0">
+            Schon ein Konto?
+            <button type="button" id="showLogin" class="btn btn-link p-0 align-baseline">Anmelden</button>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    {% if not user.is_authenticated %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modalEl = document.getElementById("loginModal");
+    const loginPane = document.getElementById("loginPane");
+    const registerPane = document.getElementById("registerPane");
+    const title = document.getElementById("loginModalLabel");
+    const params = new URLSearchParams(window.location.search);
+
+    // Zwischen Anmelden und Registrieren wechseln
+    function show(pane) {
+        const isLogin = pane === "login";
+        loginPane.classList.toggle("d-none", !isLogin);
+        registerPane.classList.toggle("d-none", isLogin);
+        title.textContent = isLogin ? "Anmelden" : "Konto erstellen";
+    }
+    document.getElementById("showRegister").addEventListener("click", () => show("register"));
+    document.getElementById("showLogin").addEventListener("click", () => show("login"));
+
+    // Nach erfolgreichem Anmelden: zur gewünschten Seite oder neu laden
+    function afterLogin() {
+        const next = params.get("next");
+        if (next && next.startsWith("/") && !next.startsWith("//")) {
+            window.location.href = next;
+        } else {
+            window.location.href = window.location.pathname;
+        }
+    }
+
+    // Beide Formulare im Hintergrund abschicken, Fehler im Kästchen zeigen
+    function handleForm(formId, boxId) {
+        const form = document.getElementById(formId);
+        const box = document.getElementById(boxId);
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            box.classList.add("d-none");
+            box.replaceChildren();
+            let messages = [];
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    afterLogin();
+                    return;
+                }
+                messages = Object.values(data.errors).flat();
+            } catch (err) {
+                messages = ["Etwas ist schiefgelaufen. Bitte nochmals versuchen."];
+            }
+
+            for (const message of messages) {
+                const line = document.createElement("div");
+                line.textContent = message;
+                box.appendChild(line);
+            }
+            box.classList.remove("d-none");
+        });
+    }
+    handleForm("loginForm", "loginErrors");
+    handleForm("registerForm", "registerErrors");
+
+    // Kästchen automatisch öffnen (z. B. nach Klick auf "+ Hinzufügen")
+    if (params.has("login") || params.has("register")) {
+        show(params.has("register") ? "register" : "login");
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    // Beim Schliessen: zurück auf "Anmelden" und Adresse aufräumen
+    modalEl.addEventListener("hidden.bs.modal", function () {
+        show("login");
+        history.replaceState(null, "", window.location.pathname);
+    });
+});
+</script>
+{% endif %}
+
 </body>
 </html>

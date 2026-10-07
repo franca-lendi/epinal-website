@@ -1,0 +1,34 @@
+{% extends "guide/base.html" %}
+
+{% block title %}Login – Épinal Guide{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 400px;">
+    <h1 class="h3 mb-4 text-center">Login</h1>
+
+    {% if form.errors %}
+        <div class="alert alert-danger">Benutzername oder Passwort falsch.</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="id_username" class="form-label">Benutzername</label>
+            <input type="text" name="username" id="id_username" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password" class="form-label">Passwort</label>
+            <input type="password" name="password" id="id_password" class="form-control" required>
+        </div>
+
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary w-100">Einloggen</button>
+    </form>
+
+    <p class="text-center mt-3">
+        Noch kein Konto? <a href="{% url 'register' %}">Registrieren</a>
+    </p>
+</div>
+{% endblock %}
