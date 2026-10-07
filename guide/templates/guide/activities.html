@@ -4,18 +4,26 @@
 
 {% block content %} <!-- jetzt rein wo zwischen main bei base steht -->
 
-<div class="container-fluid"> <!-- container-fluid=fast ganze Bildschirmfläche -->
+<div class="container-fluid px-0"> <!-- container-fluid=fast ganze Bildschirmfläche -->
 
     <!-- Suchleiste -->
-    <div class="row mb-4"> <!-- container, row, col/ mb-4= marchin-bottom 4 -->
-        <div class="col"> <!-- container, col, row -->
+<div class="row mb-4"> <!-- container, row, col/ mb-4= marchin-bottom 4 -->
+    <div class="col"> <!-- container, col, row -->
+
+        <div class="input-group input-group-lg"> <!-- input-group = Icon und Feld verbunden, lg = large -->
+            <span class="input-group-text bg-white"> <!-- Kästchen für das Icon -->
+                <i class="bi bi-search"></i>
+            </span>
             <input
                 type="text"
-                class="form-control form-control-lg" 
-                placeholder="🔎 Suche nach Aktivitäten..."
-            > <!-- form-control = eingabefeld lg= large  -->
+                class="form-control border-start-0"
+                placeholder="Suche nach Aktivitäten..."
+                aria-label="Suche nach Aktivitäten"
+            > <!-- form-control = eingabefeld, border-start-0 = kein Strich zum Icon -->
         </div>
+
     </div>
+</div>
 
     <!-- Filter -->
     <div class="row g-2 mb-5">

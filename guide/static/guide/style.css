@@ -112,3 +112,9 @@
     padding: 0.5rem 1rem;
     border-bottom: none;
 }
+
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem;
+}
