@@ -4,8 +4,100 @@
 
 {% block content %}
 
-<h1>Aktivität hinzufügen</h1>
+<div class="mx-auto" style="max-width: 720px;">
 
-<p>Hier kannst du später eine neue Aktivität hinzufügen.</p>
+    <h1 class="mb-4">Aktivität hinzufügen</h1>
+
+    <!-- Fortschritt: 1 Standort, 2 Kontakt -->
+    <div class="d-flex flex-wrap align-items-center gap-4 mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <span id="dot1" class="rounded-circle text-white d-inline-flex justify-content-center align-items-center bg-dark"
+                  style="width:36px;height:36px;">1</span>
+            <span>Standortinformationen</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span id="dot2" class="rounded-circle text-white d-inline-flex justify-content-center align-items-center bg-secondary"
+                  style="width:36px;height:36px;">2</span>
+            <span>Kontakt &amp; Öffnungszeiten</span>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="addForm" data-start-step="{{ start_step }}">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Schritt 1 -->
+        <div id="step1">
+            <h4 class="mb-3">Standortinformationen</h4>
+            {% include "guide/_field.html" with field=form.title %}
+            {% include "guide/_field.html" with field=form.category %}
+            {% include "guide/_field.html" with field=form.address %}
+            {% include "guide/_field.html" with field=form.city %}
+            {% include "guide/_field.html" with field=form.description %}
+            {% include "guide/_field.html" with field=form.price %}
+            {% include "guide/_field.html" with field=form.duration_minutes %}
+            {% include "guide/_field.html" with field=form.event_date %}
+            {% include "guide/_field.html" with field=form.image %}
+
+            <button type="button" id="toStep2" class="btn btn-dark rounded-pill px-4">Speichern &amp; fortfahren</button>
+        </div>
+
+        <!-- Schritt 2 -->
+        <div id="step2" class="d-none">
+            <h4 class="mb-3">Kontaktinformationen</h4>
+            {% include "guide/_field.html" with field=form.website %}
+            {% include "guide/_field.html" with field=form.phone %}
+            {% include "guide/_field.html" with field=form.email %}
+
+            <h4 class="mt-4 mb-3">Öffnungszeiten</h4>
+            {% include "guide/_field.html" with field=form.opening_hours %}
+
+            <div class="d-flex align-items-center gap-3 mt-4">
+                <button type="button" id="toStep1" class="btn btn-link">Zurück</button>
+                <button type="submit" class="btn btn-dark rounded-pill px-4">Senden</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("addForm");
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    const dot1 = document.getElementById("dot1");
+    const dot2 = document.getElementById("dot2");
+
+    function show(n) {
+        step1.classList.toggle("d-none", n !== 1);
+        step2.classList.toggle("d-none", n !== 2);
+        dot1.classList.toggle("bg-dark", n === 1);
+        dot1.classList.toggle("bg-secondary", n !== 1);
+        dot2.classList.toggle("bg-dark", n === 2);
+        dot2.classList.toggle("bg-secondary", n !== 2);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Weiter: erst prüfen, ob Schritt 1 ausgefüllt ist
+    document.getElementById("toStep2").addEventListener("click", function () {
+        const fields = step1.querySelectorAll("input, select, textarea");
+        for (const f of fields) {
+            if (!f.checkValidity()) {
+                f.reportValidity();
+                return;
+            }
+        }
+        show(2);
+    });
+
+    document.getElementById("toStep1").addEventListener("click", () => show(1));
+
+    show(parseInt(form.dataset.startStep, 10) || 1);
+});
+</script>
 
 {% endblock %}

@@ -1,5 +1,6 @@
 from urllib.parse import quote
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -7,8 +8,8 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from .forms import RegisterForm
-from .models import Activity
+from .forms import RegisterForm, ActivityForm
+from .models import Activity, Location
 
 
 def is_ajax(request):
@@ -46,7 +47,11 @@ def register(request):
 
 
 def activities(request):
-    activities = Activity.objects.select_related("category", "location")
+    activities = (
+        Activity.objects.filter(status="published")
+        .select_related("category", "location")
+        .order_by("-created_at")
+    )
     return render(request, "guide/activities.html", {"activities": activities})
 
 
@@ -60,4 +65,25 @@ def favorites(request):
 
 @login_required
 def add_activity(request):
-    return render(request, "guide/add_activity.html")
+    start_step = 1
+
+    if request.method == "POST":
+        form = ActivityForm(request.POST, request.FILES)
+        if form.is_valid():
+            activity = form.save(commit=False)
+            activity.user = request.user
+            activity.location = Location.objects.create(
+                address=form.cleaned_data["address"],
+                city=form.cleaned_data["city"],
+            )
+            activity.status = "published"
+            activity.save()
+            messages.success(request, "Deine Aktivität wurde hinzugefügt.")
+            return redirect("activities")  # kommt in Schritt 3: zur Detailseite mit Bewerten
+        # Fehler nur in Schritt 2? Dann Schritt 2 gleich anzeigen
+        if form.errors and set(form.errors) <= ActivityForm.STEP2_FIELDS:
+            start_step = 2
+    else:
+        form = ActivityForm()
+
+    return render(request, "guide/add_activity.html", {"form": form, "start_step": start_step})
