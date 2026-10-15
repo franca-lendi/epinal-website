@@ -10,7 +10,26 @@ urlpatterns = [
 
     path("activities/", views.activities, name="activities"),
 
+    # NEU: Detailseite und was man dort machen kann
+    path("activities/<int:pk>/", views.activity_detail, name="activity_detail"),
+
+    path("activities/<int:pk>/review/", views.review_activity, name="review_activity"),
+
+    path("activities/<int:pk>/photos/", views.add_photos, name="add_photos"),
+
+    path("activities/<int:pk>/report/", views.report_activity, {"kind": "report"}, name="report_activity"),
+
+    path("activities/<int:pk>/error/", views.report_activity, {"kind": "error"}, name="report_error"),
+
+    # NEU: Bearbeiten und Löschen
+    path("activities/<int:pk>/edit/", views.add_activity, name="edit_activity"),
+
+    path("activities/<int:pk>/delete/", views.delete_activity, name="delete_activity"),
+
     path("favorites/", views.favorites, name="favorites"),
+
+    # NEU: Deine Uploads
+    path("uploads/", views.my_uploads, name="my_uploads"),
 
     path("add/", views.add_activity, name="add_activity"),
 

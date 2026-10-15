@@ -1,12 +1,12 @@
 {% extends "guide/base.html" %}
 
-{% block title %}Aktivität hinzufügen – Épinal Guide{% endblock %}
+{% block title %}{% if activity %}Aktivität bearbeiten{% else %}Aktivität hinzufügen{% endif %} – Épinal Guide{% endblock %}
 
 {% block content %}
 
 <div class="mx-auto" style="max-width: 720px;">
 
-    <h1 class="mb-4">Aktivität hinzufügen</h1>
+    <h1 class="mb-4">{% if activity %}Aktivität bearbeiten{% else %}Aktivität hinzufügen{% endif %}</h1>
 
     <!-- Fortschritt: 1 Standort, 2 Kontakt -->
     <div class="d-flex flex-wrap align-items-center gap-4 mb-4">
@@ -40,6 +40,10 @@
             {% include "guide/_field.html" with field=form.price %}
             {% include "guide/_field.html" with field=form.duration_minutes %}
             {% include "guide/_field.html" with field=form.event_date %}
+            {% if activity.image %}
+                <!-- beim Bearbeiten: aktuelles Foto zeigen -->
+                <img src="{{ activity.image.url }}" alt="Aktuelles Foto" class="rounded mb-2" style="max-height: 120px;">
+            {% endif %}
             {% include "guide/_field.html" with field=form.image %}
 
             <button type="button" id="toStep2" class="btn btn-dark rounded-pill px-4">Speichern &amp; fortfahren</button>
@@ -55,10 +59,17 @@
             <h4 class="mt-4 mb-3">Öffnungszeiten</h4>
             {% include "guide/_field.html" with field=form.opening_hours %}
 
-            <div class="d-flex align-items-center gap-3 mt-4">
+            <div class="d-flex flex-wrap align-items-center gap-3 mt-4">
                 <button type="button" id="toStep1" class="btn btn-link">Zurück</button>
-                <button type="submit" class="btn btn-dark rounded-pill px-4">Senden</button>
+                <!-- name="save_draft": daran erkennt die View, dass es ein Entwurf ist -->
+                <button type="submit" name="save_draft" class="btn btn-outline-dark rounded-pill px-4">Als Entwurf speichern</button>
+                <button type="submit" class="btn btn-dark rounded-pill px-4">
+                    {% if activity.status == "published" %}Speichern{% else %}Senden{% endif %}
+                </button>
             </div>
+            {% if activity.status != "published" %}
+                <p class="text-muted small mt-3">Nach dem Senden erscheint deine Aktivität sofort bei den Aktivitäten.</p>
+            {% endif %}
         </div>
     </form>
 
@@ -100,4 +111,4 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
-{% endblock %}
+{% endblock %}

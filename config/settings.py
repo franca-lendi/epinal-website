@@ -125,6 +125,12 @@ LOCALE_PATHS = [BASE_DIR / 'locale']
 STATIC_URL = 'static/'
 
 
+# Hochgeladene Fotos
+# MEDIA_ROOT = Ordner auf dem Computer, MEDIA_URL = Adresse im Browser
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
@@ -138,4 +144,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'activities'
-LOGOUT_REDIRECT_URL = 'activities'
+LOGOUT_REDIRECT_URL = 'activities'

@@ -1,0 +1,244 @@
+{% extends "guide/base.html" %}
+{% load guide_extras %}
+
+{% block title %}{{ activity.title }} – Épinal Guide{% endblock %}
+
+{% block content %}
+<div class="detail">
+
+    <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-arrow-left me-1"></i>Alle Aktivitäten</a>
+
+    {% if activity.status != 'published' %}
+        <div class="alert alert-warning mt-3">
+            Das ist ein Entwurf, nur du siehst ihn.
+            <a href="{% url 'edit_activity' activity.pk %}" class="alert-link">Jetzt fertigstellen und veröffentlichen</a>
+        </div>
+    {% endif %}
+
+    <!-- Titel und Bewertung -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mt-3 mb-4">
+        <div>
+            <span class="badge bg-success mb-2">{{ activity.category.name }}</span>
+            <h1 class="detail-title">{{ activity.title }}</h1>
+            <div class="d-flex align-items-center gap-2">
+                {% if activity.rating_count %}
+                    <span class="stars fs-5">{{ activity.avg_rating|stars }}</span>
+                    <span class="fw-semibold">{{ activity.avg_rating|floatformat:1 }}</span>
+                    <a href="#bewertungen" class="link-secondary">({{ activity.rating_count }} Bewertung{{ activity.rating_count|pluralize:"en" }})</a>
+                {% else %}
+                    <span class="text-muted">Noch keine Bewertung</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grosser Bewerten-Knopf -->
+        <div class="d-flex flex-wrap gap-2">
+            {% if activity.user == user %}
+                <a href="{% url 'edit_activity' activity.pk %}" class="btn btn-outline-secondary btn-lg"><i class="bi bi-pencil me-1"></i>Bearbeiten</a>
+            {% endif %}
+            {% if activity.status == 'published' %}
+                <a href="{% url 'review_activity' activity.pk %}" class="btn btn-dark btn-lg rounded-pill px-4">
+                    <i class="bi bi-star me-1"></i>{% if my_rating %}Bewertung ändern{% else %}Bewerten{% endif %}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Linke Spalte: Bilder, Beschreibung, Bewertungen -->
+        <div class="col-lg-8">
+
+            <!-- Titelbild gross -->
+            <div class="detail-hero mb-3">
+                {% if activity.image %}
+                    <img src="{{ activity.image.url }}" alt="{{ activity.title }}">
+                {% elif photos %}
+                    <img src="{{ photos.0.image.url }}" alt="{{ activity.title }}">
+                {% else %}
+                    <div class="img-placeholder h-100"><i class="bi bi-image"></i></div>
+                {% endif %}
+            </div>
+
+            <!-- Weitere Fotos -->
+            <section id="fotos" class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h5 mb-0">Fotos{% if photos %} ({{ photos|length }}){% endif %}</h2>
+                    {% if activity.status == 'published' %}
+                        {% if user.is_authenticated %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#photoModal">
+                                <i class="bi bi-camera me-1"></i>Fotos hinzufügen
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
+                                <i class="bi bi-camera me-1"></i>Fotos hinzufügen
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if photos %}
+                    <div class="photo-grid">
+                        {% for photo in photos %}
+                            <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
+                                <img src="{{ photo.image.url }}" alt="Foto von {{ activity.title }}" loading="lazy">
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small">Noch keine weiteren Fotos. Warst du dort? Lade deine Fotos hoch.</p>
+                {% endif %}
+            </section>
+
+            <!-- Beschreibung -->
+            <section class="mb-5">
+                <h2 class="h5">Über diese Aktivität</h2>
+                <p class="detail-text">{{ activity.description|linebreaksbr }}</p>
+            </section>
+
+            <!-- Bewertungen -->
+            <section id="bewertungen">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0">Bewertungen ({{ reviews|length }})</h2>
+                    {% if activity.status == 'published' %}
+                        <a href="{% url 'review_activity' activity.pk %}" class="btn btn-sm btn-outline-dark rounded-pill">{% if my_rating %}Bewertung ändern{% else %}Bewertung schreiben{% endif %}</a>
+                    {% endif %}
+                </div>
+
+                {% for review in reviews %}
+                    <article class="review">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ review.user.username }}</strong>
+                            <span class="text-muted small">{{ review.created_at|date:"j. F Y" }}</span>
+                        </div>
+                        <div class="stars">{{ review.rating|stars }}</div>
+                        {% if review.title %}<h3 class="h6 mt-2 mb-1">{{ review.title }}</h3>{% endif %}
+                        {% if review.text %}<p class="mb-1">{{ review.text|linebreaksbr }}</p>{% endif %}
+                        <p class="text-muted small mb-0">
+                            {% if review.visited_on %}Besucht im {{ review.visited_on|date:"F Y" }}{% endif %}
+                            {% if review.companions %} · {{ review.get_companions_display }}{% endif %}
+                        </p>
+                    </article>
+                {% empty %}
+                    <p class="text-muted">Sei die erste Person, die diese Aktivität bewertet.</p>
+                {% endfor %}
+            </section>
+        </div>
+
+        <!-- Rechte Spalte: Infos -->
+        <div class="col-lg-4">
+            <div class="info-box">
+                <ul class="list-unstyled mb-0">
+                    <li><i class="bi bi-geo-alt"></i>{{ activity.location }}</li>
+                    <li><i class="bi bi-cash-coin"></i>{% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}</li>
+                    {% if activity.duration_minutes %}<li><i class="bi bi-clock"></i>{{ activity.duration_minutes }} Min.</li>{% endif %}
+                    {% if activity.event_date %}<li><i class="bi bi-calendar-event"></i>{{ activity.event_date|date:"l, j. F Y" }}</li>{% endif %}
+                    {% if activity.website %}<li><i class="bi bi-globe"></i><a href="{{ activity.website }}" target="_blank" rel="noopener">Website</a></li>{% endif %}
+                    {% if activity.phone %}<li><i class="bi bi-telephone"></i><a href="tel:{{ activity.phone }}">{{ activity.phone }}</a></li>{% endif %}
+                    {% if activity.email %}<li><i class="bi bi-envelope"></i><a href="mailto:{{ activity.email }}">{{ activity.email }}</a></li>{% endif %}
+                </ul>
+
+                {% if activity.opening_hours %}
+                    <hr>
+                    <h3 class="h6">Öffnungszeiten</h3>
+                    <p class="mb-0">{{ activity.opening_hours|linebreaksbr }}</p>
+                {% endif %}
+
+                <hr>
+                <p class="small text-muted mb-0">Hinzugefügt von {{ activity.user.username }} am {{ activity.created_at|date:"j. F Y" }}</p>
+            </div>
+
+            <!-- Melden und Fehler melden -->
+            {% if activity.status == 'published' %}
+            <div class="d-flex gap-3 mt-3 small">
+                {% if user.is_authenticated %}
+                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#errorModal">
+                        <i class="bi bi-pencil-square me-1"></i>Fehler melden
+                    </button>
+                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#reportModal">
+                        <i class="bi bi-flag me-1"></i>Melden
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="bi bi-pencil-square me-1"></i>Fehler melden
+                    </button>
+                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="bi bi-flag me-1"></i>Melden
+                    </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if user.is_authenticated and activity.status == 'published' %}
+
+<!-- Kästchen: Fotos hinzufügen -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'add_photos' activity.pk %}" enctype="multipart/form-data" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+                <h5 class="modal-title ms-3" id="photoModalLabel">Fotos hinzufügen</h5>
+            </div>
+            <div class="modal-body">
+                {{ photo_form.photos }}
+                <div class="form-text">Bis zu 10 Fotos auf einmal, je höchstens 10 MB. Nur eigene Fotos hochladen.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Hochladen</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Kästchen: Fehler melden -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'report_error' activity.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+                <h5 class="modal-title ms-3" id="errorModalLabel">Fehler melden</h5>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Stimmt etwas nicht? Sag uns, was falsch ist.</p>
+                <label for="{{ error_form.description.id_for_label }}" class="form-label">{{ error_form.description.label }}</label>
+                {{ error_form.description }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="submit" class="btn btn-primary">Senden</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Kästchen: Melden -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'report_activity' activity.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+                <h5 class="modal-title ms-3" id="reportModalLabel">Aktivität melden</h5>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Warum soll diese Aktivität geprüft werden?</p>
+                {% for choice in report_form.reason %}
+                    <div class="form-check">{{ choice.tag }} <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></div>
+                {% endfor %}
+                <label for="{{ report_form.description.id_for_label }}" class="form-label mt-3">{{ report_form.description.label }}</label>
+                {{ report_form.description }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="submit" class="btn btn-danger">Melden</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

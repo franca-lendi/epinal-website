@@ -1,0 +1,204 @@
+{% extends "guide/base.html" %}
+{% load guide_extras %}
+
+{% block title %}Deine Uploads – Épinal Guide{% endblock %}
+
+{% block content %}
+
+<!-- Kopfzeile -->
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Deine Uploads</h1>
+        <p class="text-muted mb-0">Verwalte deine eigenen Aktivitäten</p>
+    </div>
+    <a href="{% url 'add_activity' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Neue Aktivität hinzufügen
+    </a>
+</div>
+
+<!-- Tabs links, Sortieren und Ansicht rechts -->
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 border-bottom mb-4">
+    <ul class="nav nav-underline">
+        <li class="nav-item">
+            <a class="nav-link {% if tab != 'drafts' %}active{% endif %}"
+               href="?tab=all&sort={{ sort }}&view={{ view }}">Meine Aktivitäten ({{ counts.all }})</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'drafts' %}active{% endif %}"
+               href="?tab=drafts&sort={{ sort }}&view={{ view }}">Entwürfe ({{ counts.drafts }})</a>
+        </li>
+    </ul>
+
+    <div class="d-flex align-items-center gap-2 pb-2">
+        <!-- Sortieren: schickt das Formular sofort ab, wenn man etwas auswählt -->
+        <form method="get" class="d-flex align-items-center">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <input type="hidden" name="view" value="{{ view }}">
+            <label for="sortSelect" class="visually-hidden">Sortieren nach</label>
+            <select id="sortSelect" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for key, label in sort_options.items %}
+                    <option value="{{ key }}" {% if key == sort %}selected{% endif %}>Sortieren nach: {{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="btn-group btn-group-sm" role="group" aria-label="Ansicht">
+            <a href="?tab={{ tab }}&sort={{ sort }}&view=cards" class="btn {% if view == 'cards' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-grid me-1"></i>Karte
+            </a>
+            <a href="?tab={{ tab }}&sort={{ sort }}&view=table" class="btn {% if view == 'table' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-list-ul me-1"></i>Tabelle
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if not page.object_list %}
+    <!-- Noch nichts hochgeladen -->
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-cloud-arrow-up display-4 d-block mb-3"></i>
+        {% if tab == 'drafts' %}
+            <p>Du hast keine Entwürfe.</p>
+        {% else %}
+            <p>Du hast noch keine Aktivität hochgeladen.</p>
+            <a href="{% url 'add_activity' %}" class="btn btn-outline-primary">Erste Aktivität hinzufügen</a>
+        {% endif %}
+    </div>
+
+{% elif view == 'table' %}
+    <!-- Tabellen-Ansicht -->
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th><th>Status</th><th>Ort</th><th>Kategorie</th><th>Bewertung</th><th>Dauer</th><th class="text-end">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for activity in page %}
+                <tr>
+                    <td><a href="{% url 'activity_detail' activity.pk %}" class="fw-semibold text-decoration-none">{{ activity.title }}</a></td>
+                    <td>{% include "guide/_status_badge.html" %}</td>
+                    <td>{{ activity.location.city }}</td>
+                    <td>{{ activity.category.name }}</td>
+                    <td class="stars">{{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small></td>
+                    <td>{% if activity.duration_minutes %}{{ activity.duration_minutes }} Min.{% else %}–{% endif %}</td>
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'edit_activity' activity.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Bearbeiten</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-url="{% url 'delete_activity' activity.pk %}" data-title="{{ activity.title }}">
+                            <i class="bi bi-trash"></i> Löschen
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% else %}
+    <!-- Karten-Ansicht -->
+    <div class="row g-4">
+        {% for activity in page %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 upload-card">
+
+                <div class="card-img-wrapper">
+                    {% if activity.image %}
+                        <img src="{{ activity.image.url }}" class="card-img-top" alt="{{ activity.title }}">
+                    {% else %}
+                        <div class="card-img-top img-placeholder"><i class="bi bi-image"></i></div>
+                    {% endif %}
+
+                    <!-- "..." Menü oben rechts -->
+                    <div class="dropdown card-menu">
+                        <button class="btn btn-light btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mehr">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'activity_detail' activity.pk %}">Ansehen</a></li>
+                            <li><a class="dropdown-item" href="{% url 'edit_activity' activity.pk %}">Bearbeiten</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    {% include "guide/_status_badge.html" %}
+                    <h5 class="card-title mt-2 mb-2">
+                        <a href="{% url 'activity_detail' activity.pk %}" class="text-reset text-decoration-none">{{ activity.title }}</a>
+                    </h5>
+                    <p class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>{{ activity.location.city }}</p>
+                    <p class="small text-muted mb-2"><i class="bi bi-tag me-1"></i>Kategorie: {{ activity.category.name }}</p>
+                    <p class="small mb-0 d-flex gap-3">
+                        <span class="stars">{{ activity.avg_rating|stars }} <span class="text-muted">({{ activity.rating_count }})</span></span>
+                        {% if activity.duration_minutes %}<span class="text-muted"><i class="bi bi-clock me-1"></i>{{ activity.duration_minutes }} Min.</span>{% endif %}
+                    </p>
+                </div>
+
+                <div class="card-footer bg-white border-0 d-flex gap-2 pb-3">
+                    <a href="{% url 'edit_activity' activity.pk %}" class="btn btn-sm btn-outline-primary flex-fill">
+                        <i class="bi bi-pencil me-1"></i>Bearbeiten
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger flex-fill" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                            data-url="{% url 'delete_activity' activity.pk %}" data-title="{{ activity.title }}">
+                        <i class="bi bi-trash me-1"></i>Löschen
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- Seiten 1, 2, 3 ... -->
+{% if page.has_other_pages %}
+<nav class="mt-5" aria-label="Seiten">
+    <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?tab={{ tab }}&sort={{ sort }}&view={{ view }}&page={{ page.previous_page_number }}" aria-label="Zurück">&lsaquo;</a></li>
+        {% endif %}
+        {% for number in page.paginator.page_range %}
+            <li class="page-item {% if number == page.number %}active{% endif %}">
+                <a class="page-link" href="?tab={{ tab }}&sort={{ sort }}&view={{ view }}&page={{ number }}">{{ number }}</a>
+            </li>
+        {% endfor %}
+        {% if page.has_next %}
+            <li class="page-item"><a class="page-link" href="?tab={{ tab }}&sort={{ sort }}&view={{ view }}&page={{ page.next_page_number }}" aria-label="Weiter">&rsaquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Löschen bestätigen (ein Kästchen für alle Karten) -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+                    <h5 class="modal-title ms-3" id="deleteModalLabel">Aktivität löschen?</h5>
+                </div>
+                <div class="modal-body">
+                    «<span id="deleteTitle"></span>» wird mit allen Fotos und Bewertungen gelöscht. Das kann man nicht rückgängig machen.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Beim Öffnen: richtige Aktivität ins Löschen-Kästchen eintragen
+document.getElementById("deleteModal").addEventListener("show.bs.modal", function (event) {
+    const button = event.relatedTarget;
+    document.getElementById("deleteForm").action = button.dataset.url;
+    document.getElementById("deleteTitle").textContent = button.dataset.title;
+});
+</script>
+{% endblock %}

@@ -66,11 +66,22 @@ class ActivityImage(models.Model):
 
 # NEU: Bewertung (Sterne, Titel, Text)
 class Rating(models.Model):
+    COMPANION_CHOICES = [
+        ("business", "Geschäftlich"),
+        ("couple", "Als Paar"),
+        ("family", "Familie"),
+        ("friends", "Mit Freunden"),
+        ("solo", "Alleine"),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="ratings")
     rating = models.PositiveSmallIntegerField()  # 1 bis 5
     title = models.CharField(max_length=150, blank=True)
     text = models.TextField(blank=True)
+    # NEU (wie bei Tripadvisor): wann und mit wem
+    visited_on = models.DateField(null=True, blank=True)  # nur Monat und Jahr zählen
+    companions = models.CharField(max_length=20, choices=COMPANION_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -101,4 +112,4 @@ class Favorite(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user", "activity")
+        unique_together = ("user", "activity")

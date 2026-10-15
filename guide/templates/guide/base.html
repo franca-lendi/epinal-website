@@ -52,8 +52,8 @@
             <span class="d-none d-lg-inline">Favoriten</span>
         </a>
 
-        <a href="{% url 'add_activity' %}" aria-label="Deine Uploads"
-           class="{% if request.resolver_match.url_name == 'add_activity' %}active{% endif %}">
+        <a href="{% url 'my_uploads' %}" aria-label="Deine Uploads"
+           class="{% if request.resolver_match.url_name in 'my_uploads add_activity edit_activity' %}active{% endif %}">
             <i class="bi bi-upload me-lg-2"></i><span class="d-none d-lg-inline">Deine Uploads</span>
         </a>
     </div>
@@ -71,7 +71,8 @@
                 <li><span class="dropdown-item-text text-muted small">{{ user.username }}</span></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#">Mein Profil</a></li>
-                <li><a class="dropdown-item" href="#">Deine Uploads</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_uploads' %}">Deine Uploads</a></li>
+                <li><a class="dropdown-item" href="{% url 'add_activity' %}">Aktivität hinzufügen</a></li>
                 <li>
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
@@ -91,6 +92,14 @@
 
     <!-- Inhalt der jeweiligen Seite -->
     <main class="px-3 px-md-4 px-xl-5 py-4">
+        <!-- Meldungen wie "Gespeichert" (grüner Balken wie bei Tripadvisor) -->
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schliessen"></button>
+            </div>
+        {% endfor %}
+
         {% block content %}{% endblock %}
     </main>
 
@@ -259,5 +268,8 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 {% endif %}
 
+    <!-- Platz für Skripte einzelner Seiten -->
+    {% block scripts %}{% endblock %}
+
 </body>
-</html>
+</html>
