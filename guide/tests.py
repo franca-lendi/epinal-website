@@ -8,7 +8,9 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from PIL import Image as PILImage
 
-from .models import Activity, ActivityImage, Category, Location, Rating, Report
+import datetime
+
+from .models import Activity, ActivityImage, Category, Favorite, Location, Rating, Report
 
 TEMP_MEDIA = tempfile.mkdtemp()
 
@@ -211,3 +213,113 @@ class GuideTests(TestCase):
         self.client.post(reverse("report_activity", args=[activity.pk]), {"reason": "error"})
         self.client.post(reverse("report_error", args=[activity.pk]), {"description": ""})
         self.assertEqual(Report.objects.count(), 2)
+
+
+class SearchFilterFavoriteTests(TestCase):
+    """Suche, Filter und Favoriten"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+        self.park = Category.objects.get(name="Parks & Natur")
+        self.museum = Category.objects.get(name="Museen & Kultur")
+
+        def make(title, category, price=0, date=None, address="", description="Text", status="published"):
+            location = Location.objects.create(address=address, city="Épinal")
+            return Activity.objects.create(user=self.anna, category=category, location=location, title=title,
+                                           description=description, price=price, event_date=date, status=status)
+
+        self.eis = make("Patinoire", self.sport, price=6, address="2 Faubourg de Poissompré")
+        self.parc = make("Parc du Château", self.park, description="Grosser Park mit Tieren")
+        self.musee = make("Musée de l'Image", self.museum, price=12)
+        self.fest = make("Fête foraine", self.sport, price=0, date=datetime.date(2026, 11, 20))
+        self.draft = make("Entwurf Park", self.park, status="draft")
+
+    def titles(self, **params):
+        response = self.client.get(reverse("activities"), params)
+        self.assertEqual(response.status_code, 200)
+        return {a.title for a in response.context["activities"]}
+
+    def test_no_filter_shows_all_published(self):
+        self.assertEqual(self.titles(), {"Patinoire", "Parc du Château", "Musée de l'Image", "Fête foraine"})
+
+    def test_search_title_description_address_category(self):
+        self.assertEqual(self.titles(q="patinoire"), {"Patinoire"})        # Name, Gross/klein egal
+        self.assertEqual(self.titles(q="tieren"), {"Parc du Château"})     # Beschreibung
+        self.assertEqual(self.titles(q="Poissompré"), {"Patinoire"})       # Adresse
+        self.assertEqual(self.titles(q="museen"), {"Musée de l'Image"})    # Kategorie
+        self.assertEqual(self.titles(q="park tieren"), {"Parc du Château"})  # alle Wörter müssen passen
+        self.assertEqual(self.titles(q="gibtesnicht"), set())
+
+    def test_draft_never_in_results(self):
+        self.assertNotIn("Entwurf Park", self.titles(q="park"))
+
+    def test_category_filter_multiple(self):
+        response = self.client.get(reverse("activities"), {"category": [self.sport.pk, self.park.pk]})
+        titles = {a.title for a in response.context["activities"]}
+        self.assertEqual(titles, {"Patinoire", "Fête foraine", "Parc du Château"})
+
+    def test_price_filter(self):
+        self.assertEqual(self.titles(max_price=0), {"Parc du Château", "Fête foraine"})
+        self.assertEqual(self.titles(max_price=10), {"Parc du Château", "Fête foraine", "Patinoire"})
+        self.assertEqual(len(self.titles(max_price=100)), 4)  # ganz rechts = egal
+        self.assertEqual(len(self.titles(max_price="quatsch")), 4)  # falsche Eingabe = egal
+
+    def test_date_filter_keeps_undated(self):
+        # Fest am 20.11.: im Zeitraum Dezember nicht dabei, die anderen (ohne Datum) schon
+        self.assertNotIn("Fête foraine", self.titles(date_from="2026-12-01", date_to="2026-12-31"))
+        self.assertIn("Fête foraine", self.titles(date_from="2026-11-01", date_to="2026-11-30"))
+        self.assertIn("Patinoire", self.titles(date_from="2026-12-01"))
+
+    def test_combined(self):
+        self.assertEqual(self.titles(q="parc", max_price=0, category=self.park.pk), {"Parc du Château"})
+
+    # ---------- Favoriten ----------
+
+    def test_favorite_needs_login(self):
+        response = self.client.post(reverse("toggle_favorite", args=[self.eis.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Favorite.objects.exists())
+        self.assertEqual(self.client.get(reverse("favorites")).status_code, 302)
+
+    def test_toggle_favorite_ajax(self):
+        self.client.login(username="anna", password="geheim12345")
+        url = reverse("toggle_favorite", args=[self.eis.pk])
+        ajax = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+        self.assertEqual(self.client.post(url, **ajax).json(), {"ok": True, "is_favorite": True})
+        self.assertTrue(Favorite.objects.filter(user=self.anna, activity=self.eis).exists())
+
+        self.assertEqual(self.client.post(url, **ajax).json(), {"ok": True, "is_favorite": False})
+        self.assertFalse(Favorite.objects.exists())
+
+    def test_toggle_without_js_redirects_back(self):
+        self.client.login(username="anna", password="geheim12345")
+        response = self.client.post(reverse("toggle_favorite", args=[self.eis.pk]), {"next": "/activities/?q=eis"})
+        self.assertRedirects(response, "/activities/?q=eis", fetch_redirect_response=False)
+        # fremde Adresse wird ignoriert
+        response = self.client.post(reverse("toggle_favorite", args=[self.eis.pk]), {"next": "https://boese.example"})
+        self.assertRedirects(response, reverse("activity_detail", args=[self.eis.pk]), fetch_redirect_response=False)
+
+    def test_favorites_page_and_heart_state(self):
+        self.client.login(username="anna", password="geheim12345")
+        Favorite.objects.create(user=self.anna, activity=self.parc)
+        Favorite.objects.create(user=self.anna, activity=self.musee)
+
+        page = self.client.get(reverse("favorites"))
+        self.assertEqual([a.title for a in page.context["activities"]], ["Musée de l'Image", "Parc du Château"])
+        self.assertNotContains(page, "Patinoire")
+
+        # auf der Aktivitäten-Seite ist das Herz bei den Favoriten gefüllt
+        listing = self.client.get(reverse("activities"))
+        favs = {a.title for a in listing.context["activities"] if a.is_favorite}
+        self.assertEqual(favs, {"Parc du Château", "Musée de l'Image"})
+
+        detail = self.client.get(reverse("activity_detail", args=[self.parc.pk]))
+        self.assertContains(detail, "Gespeichert")
+
+    def test_cannot_favorite_draft(self):
+        self.client.login(username="anna", password="geheim12345")
+        response = self.client.post(reverse("toggle_favorite", args=[self.draft.pk]))
+        self.assertEqual(response.status_code, 404)
+

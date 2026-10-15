@@ -1,5 +1,4 @@
 {% extends "guide/base.html" %} <!-- aufbauen darauf -->
-{% load guide_extras %} <!-- für die Sterne -->
 
 {% block title %}Aktivitäten – Épinal Guide{% endblock %} <!-- gleiche da -->
 
@@ -7,139 +6,129 @@
 
 <div class="container-fluid px-0"> <!-- container-fluid=fast ganze Bildschirmfläche -->
 
-    <!-- Suchleiste -->
-<div class="row mb-4"> <!-- container, row, col/ mb-4= marchin-bottom 4 -->
-    <div class="col"> <!-- container, col, row -->
+    <!-- Erfolgsmeldungen zeigt jetzt base.html für alle Seiten an -->
 
-        <div class="input-group input-group-lg"> <!-- input-group = Icon und Feld verbunden, lg = large -->
-            <span class="input-group-text bg-white"> <!-- Kästchen für das Icon -->
-                <i class="bi bi-search"></i>
-            </span>
-            <input
-                type="text"
-                class="form-control border-start-0"
-                placeholder="Suche nach Aktivitäten..."
-                aria-label="Suche nach Aktivitäten"
-            > <!-- form-control = eingabefeld, border-start-0 = kein Strich zum Icon -->
+    <!-- Suche und Filter sind EIN Formular mit method="get":
+         beim Abschicken landen die Eingaben in der Adresse, z.B. /activities/?q=park&max_price=20
+         und die View filtert danach. So kann man eine gefilterte Liste auch als Link teilen. -->
+    <form method="get" action="{% url 'activities' %}" id="filterForm">
+
+    <!-- Suchleiste + Aktivität hinzufügen -->
+    <div class="row g-2 mb-4 align-items-center">
+        <div class="col">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-white">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ query }}"
+                    class="form-control border-start-0"
+                    placeholder="Suche nach Aktivitäten, Orten …"
+                    aria-label="Suche nach Aktivitäten"
+                > <!-- name="q" = so heisst die Suche in der Adresse, Enter schickt ab -->
+                <button type="submit" class="btn btn-dark px-4">Suchen</button>
+            </div>
         </div>
-
+        <div class="col-12 col-md-auto">
+            <a href="{% url 'add_activity' %}" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-plus-lg me-1"></i> Füge deine Aktivität hinzu
+            </a>
+        </div>
     </div>
-</div>
 
     <!-- Filter -->
-    <div class="row g-2 mb-5">
+    <div class="row g-2 mb-3">
 
         <!-- Kategorie -->
-        <div class="col"> <!-- jeder filter eigene spalte -->
+        <div class="col-6 col-lg"> <!-- jeder filter eigene spalte -->
             <button
-                class="btn btn-outline-secondary w-100" 
+                class="btn {% if active.category %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#kategorieFilter"
-            > <!-- bootstrap, nimmt gesamte breite der spalte ein/ bootstrap auf und zu klappen -->
-            <!-- was aufgeklappt hashtag heisst sucht nach element mit dieser id -->
-                Kategorie ▼
+            > <!-- bootstrap auf und zu klappen, sucht nach element mit dieser id -->
+                Kategorie{% if active.category %} ({{ active.category }}){% endif %} ▼
             </button>
 
             <div class="collapse mt-2" id="kategorieFilter"> <!-- das hier aufklappen -->
-                <div class="border rounded p-3"> <!-- p=padding innenabstand -->
-
-                    <div class="form-check"> <!-- bootstrap für checkbox -->
-                        <input class="form-check-input" type="checkbox" id="sport"> <!-- bootstrap gestlalted, type und id -->
-                        <label class="form-check-label" for="sport"> <!-- dann label dafür Sport -->
-                            Sport
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="2">
-                        <label class="form-check-label" for="2">
-                            2
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="3">
-                        <label class="form-check-label" for="3">
-                            3
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="4">
-                        <label class="form-check-label" for="4">
-                            4
-                        </label>
-                    </div>
-
+                <div class="border rounded p-3 filter-box"> <!-- p=padding innenabstand -->
+                    <!-- Kategorien kommen jetzt aus der Datenbank.
+                         Alle Checkboxen heissen "category", dadurch kann man mehrere wählen -->
+                    {% for category in categories %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="category"
+                                   value="{{ category.id }}" id="cat{{ category.id }}"
+                                   {% if category.id|stringformat:"s" in selected_categories %}checked{% endif %}>
+                            <label class="form-check-label" for="cat{{ category.id }}">{{ category.name }}</label>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
 
 
         <!-- Datum -->
-        <div class="col">
+        <div class="col-6 col-lg">
             <button
-                class="btn btn-outline-secondary w-100"
+                class="btn {% if active.date %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#datumFilter"
             >
-                Datum ▼
+                Datum{% if active.date %} (1){% endif %} ▼
             </button>
 
             <div class="collapse mt-2" id="datumFilter">
-                <div class="border rounded p-3">
+                <div class="border rounded p-3 filter-box">
 
-                    <label class="form-label small text-muted">
-                        Von
-                    </label>
-
-                    <input
-                        type="date"
-                        class="form-control mb-2"
-                    >
+                    <label for="dateFrom" class="form-label small text-muted">Von</label>
+                    <input type="date" name="date_from" id="dateFrom" class="form-control mb-2"
+                           value="{{ date_from|date:'Y-m-d' }}">
                     <!-- type datumsfeld -->
 
-                    <label class="form-label small text-muted">
-                        Bis
-                    </label>
+                    <label for="dateTo" class="form-label small text-muted">Bis</label>
+                    <input type="date" name="date_to" id="dateTo" class="form-control"
+                           value="{{ date_to|date:'Y-m-d' }}">
 
-                    <input
-                        type="date"
-                        class="form-control"
-                    >
-
+                    <p class="form-text mb-0 mt-2">Aktivitäten ohne festes Datum werden immer angezeigt.</p>
                 </div>
             </div>
         </div>
 
 
         <!-- Preis -->
-        <div class="col">
+        <div class="col-6 col-lg">
             <button
-                class="btn btn-outline-secondary w-100"
+                class="btn {% if active.price %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#preisFilter"
             >
-                Preis ▼
+                Preis{% if active.price %} (bis {{ max_price }} €){% endif %} ▼
             </button>
 
             <div class="collapse mt-2" id="preisFilter">
-                <div class="border rounded p-3">
+                <div class="border rounded p-3 filter-box">
 
+                    <label for="priceRange" class="form-label small">
+                        Höchstens: <strong id="priceValue"></strong>
+                    </label>
                     <input
                         type="range"
+                        name="max_price"
+                        id="priceRange"
                         class="form-range"
                         min="0"
-                        max="100"
-                        value="100"
+                        max="{{ price_max }}"
+                        step="5"
+                        value="{{ max_price }}"
                     >
-                    <!-- type schiebeding, form-range bootstrap, value= startwert -->
-                    <div class="d-flex justify-content-between"> <!-- möglichst weit auseinander -->
-                        <span>0 €</span>
-                        <span>100 €</span>
+                    <!-- type schiebeding, form-range bootstrap, ganz rechts = egal -->
+                    <div class="d-flex justify-content-between small text-muted"> <!-- möglichst weit auseinander -->
+                        <span>Gratis</span>
+                        <span>{{ price_max }} € +</span>
                     </div>
 
                 </div>
@@ -147,120 +136,73 @@
         </div>
 
 
-        <!-- Distanz -->
-        <div class="col">
-            <button
-                class="btn btn-outline-secondary w-100"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#distanzFilter"
-            >
+        <!-- Distanz: braucht Koordinaten bei den Aktivitäten, kommt später -->
+        <div class="col-6 col-lg">
+            <button class="btn btn-outline-secondary w-100" type="button" disabled
+                    title="Kommt, sobald die Aktivitäten Koordinaten haben">
                 Distanz ▼
             </button>
-
-            <div class="collapse mt-2" id="distanzFilter">
-                <div class="border rounded p-3">
-
-                    <input
-                        type="range"
-                        class="form-range"
-                        min="0"
-                        max="20"
-                        value="20"
-                    >
-
-                    <div class="d-flex justify-content-between">
-                        <span>0 km</span>
-                        <span>20 km</span>
-                    </div>
-
-                </div>
-            </div>
         </div>
 
 
         <!-- Anwenden -->
-        <div class="col-auto"> <!-- so vile wie brauhct -->
-            <button class="btn btn-primary">
+        <div class="col-12 col-lg-auto"> <!-- so viel wie braucht -->
+            <button type="submit" class="btn btn-primary w-100">
                 Anwenden
             </button>
         </div>
 
     </div> <!-- Ende Filterzeile -->
 
+    </form>
+
 
     <!-- Aktivitäten -->
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h2 class="mb-0">Alle Aktivitäten</h2>
-        <!-- eigener Knopf zum Hinzufügen (ohne Login geht automatisch das Login-Kästchen auf) -->
-        <a href="{% url 'add_activity' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Füge deine Aktivität hinzu
-        </a>
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mt-4 mb-3">
+        <h2 class="mb-0">
+            {% if any_filter %}Suchergebnisse{% else %}Alle Aktivitäten{% endif %}
+            <small class="text-muted fs-6">({{ activities|length }})</small>
+        </h2>
+        {% if any_filter %}
+            <!-- einfach die Seite ohne Filter laden -->
+            <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-x-circle me-1"></i>Alle Filter zurücksetzen</a>
+        {% endif %}
     </div>
 
     <div class="row g-4"> <!-- bootstrap zeile mit abstand 4 -->
 
         {% for activity in activities %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 activity-card position-relative"
-                 data-category="{{ activity.category.id }}"
-                 data-price="{{ activity.price }}"
-                 data-distance="{{ activity.distance|default:'' }}"
-                 data-date="{{ activity.event_date|date:'Y-m-d' }}">
-
-                <div class="card-img-wrapper">
-                    {% if activity.image %}
-                        <img src="{{ activity.image.url }}" class="card-img-top"
-                             alt="{{ activity.title }}">
-                    {% else %}
-                        <img src="https://placehold.co/600x400" class="card-img-top"
-                             alt="Kein Bild vorhanden">
-                    {% endif %}
-                    <button class="fav-btn" type="button" aria-label="Favorisieren">♡</button>
-                </div>
-
-                <div class="card-body">
-                    <span class="badge bg-success mb-2">{{ activity.category.name }}</span>
-                    <h5 class="card-title">{{ activity.title }}</h5>
-                    <p class="card-text">{{ activity.description|truncatechars:100 }}</p>
-
-                    <p class="text-muted small mb-0">
-                        {% if activity.event_date %}
-                            📅 {{ activity.event_date|date:"j. F" }}<br>
-                        {% endif %}
-
-                        📍 {{ activity.location.city }}
-                        {% if activity.distance %}· {{ activity.distance }} km{% endif %}<br>
-
-                        💰 {% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}<br>
-
-                        {% if activity.duration_minutes %}
-                            ⏱ {{ activity.duration_minutes }} Min.
-                        {% endif %}
-                    </p>
-                </div>
-
-                <div class="card-footer d-flex justify-content-between align-items-center">
-                    <span class="stars" title="{{ activity.avg_rating|default:0|floatformat:1 }} von 5">
-                        {% if activity.rating_count %}
-                            {{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small>
-                        {% else %}
-                            <small class="text-muted">Noch keine Bewertung</small>
-                        {% endif %}
-                    </span>
-                    <!-- stretched-link = die ganze Karte ist klickbar -->
-                    <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-primary btn-sm stretched-link">Mehr erfahren</a>
-                </div>
-
-            </div>
-        </div>
+            {% include "guide/_activity_card.html" %}
         {% empty %}
-            <p>Noch keine Aktivitäten vorhanden.</p>
+            {% if any_filter %}
+                <p class="text-muted">Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern.</p>
+            {% else %}
+                <p>Noch keine Aktivitäten vorhanden.</p>
+            {% endif %}
         {% endfor %}
-
 
     </div> <!-- Ende row der Karten -->
 
 </div> <!-- Ende container-fluid -->
-{% endblock %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Preis neben dem Schieberegler anzeigen (ganz rechts = "egal")
+document.addEventListener("DOMContentLoaded", function () {
+    const range = document.getElementById("priceRange");
+    const label = document.getElementById("priceValue");
+    const max = Number(range.max);
+
+    function show() {
+        const value = Number(range.value);
+        if (value >= max) label.textContent = "egal";
+        else if (value === 0) label.textContent = "nur gratis";
+        else label.textContent = value + " €";
+    }
+    range.addEventListener("input", show);
+    show();
+});
+</script>
+{% endblock %}

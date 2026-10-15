@@ -1,3 +1,5 @@
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from urllib.parse import quote
 
 from django.contrib import messages
@@ -5,14 +7,14 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q, Subquery
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import RegisterForm, ActivityForm, PhotoForm, ReportForm, ReviewForm
-from .models import Activity, ActivityImage, Location, Rating
+from .models import Activity, ActivityImage, Category, Favorite, Location, Rating
 
 
 def with_ratings(queryset):
@@ -20,6 +22,15 @@ def with_ratings(queryset):
     return queryset.annotate(
         avg_rating=Avg("ratings__rating"),
         rating_count=Count("ratings", distinct=True),
+    )
+
+
+def with_favorites(queryset, user):
+    # Hängt jeder Aktivität is_favorite = True/False für die angemeldete Person an
+    if not user.is_authenticated:
+        return queryset
+    return queryset.annotate(
+        is_favorite=Exists(Favorite.objects.filter(user=user, activity=OuterRef("pk")))
     )
 
 
@@ -62,18 +73,83 @@ def register(request):
     return redirect(reverse("activities") + "?register=1")
 
 
+PRICE_MAX = 100  # ganz rechts beim Schieberegler = keine Obergrenze
+
+
+def parse_date(value):
+    # "2026-10-15" -> date, alles andere -> None
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def activities(request):
-    activities = with_ratings(
-        Activity.objects.filter(status="published")
-        .select_related("category", "location")
-        .order_by("-created_at")
-    )
-    return render(request, "guide/activities.html", {"activities": activities})
+    activities = Activity.objects.filter(status="published").select_related("category", "location")
+
+    # ---------- Suche ----------
+    # Sucht im Namen, in der Beschreibung, in der Kategorie und in der Adresse
+    query = request.GET.get("q", "").strip()
+    if query:
+        for word in query.split():  # jedes Wort muss irgendwo vorkommen
+            activities = activities.filter(
+                Q(title__icontains=word)
+                | Q(description__icontains=word)
+                | Q(category__name__icontains=word)
+                | Q(location__address__icontains=word)
+                | Q(location__city__icontains=word)
+            )
+
+    # ---------- Filter: Kategorie (mehrere möglich) ----------
+    selected_categories = [c for c in request.GET.getlist("category") if c.isdigit()]
+    if selected_categories:
+        activities = activities.filter(category_id__in=selected_categories)
+
+    # ---------- Filter: Preis (höchstens ...) ----------
+    try:
+        max_price = Decimal(request.GET.get("max_price", PRICE_MAX))
+    except InvalidOperation:
+        max_price = Decimal(PRICE_MAX)
+    max_price = max(Decimal(0), min(max_price, Decimal(PRICE_MAX)))
+    if max_price < PRICE_MAX:
+        activities = activities.filter(price__lte=max_price)
+
+    # ---------- Filter: Datum (von / bis) ----------
+    # Aktivitäten ohne Datum (z.B. ein Park) kann man immer machen, sie bleiben drin.
+    # Events mit Datum erscheinen nur, wenn ihr Datum im gewählten Zeitraum liegt.
+    date_from = parse_date(request.GET.get("date_from"))
+    date_to = parse_date(request.GET.get("date_to"))
+    if date_from:
+        activities = activities.filter(Q(event_date__isnull=True) | Q(event_date__gte=date_from))
+    if date_to:
+        activities = activities.filter(Q(event_date__isnull=True) | Q(event_date__lte=date_to))
+
+    activities = with_favorites(with_ratings(activities), request.user).order_by("-created_at")
+
+    # Wie viele Filter sind aktiv? (für die Zahl auf den Knöpfen)
+    active = {
+        "category": len(selected_categories),
+        "date": int(bool(date_from or date_to)),
+        "price": int(max_price < PRICE_MAX),
+    }
+
+    return render(request, "guide/activities.html", {
+        "activities": activities,
+        "categories": Category.objects.order_by("name"),
+        "query": query,
+        "selected_categories": selected_categories,
+        "max_price": int(max_price),
+        "price_max": PRICE_MAX,
+        "date_from": date_from,
+        "date_to": date_to,
+        "active": active,
+        "any_filter": query or any(active.values()),
+    })
 
 
 def activity_detail(request, pk):
     activity = get_object_or_404(
-        with_ratings(Activity.objects.select_related("category", "location", "user")),
+        with_favorites(with_ratings(Activity.objects.select_related("category", "location", "user")), request.user),
         pk=pk,
     )
     # Entwürfe sieht nur die eigene Person
@@ -100,8 +176,38 @@ def home(request):
     return render(request, "guide/home.html")
 
 
+@login_required
 def favorites(request):
-    return render(request, "guide/favorites.html")
+    # Nur die Aktivitäten, die ich mit dem Herz markiert habe (neueste Markierung zuerst)
+    my_favorites = Favorite.objects.filter(user=request.user, activity=OuterRef("pk"))
+    activities = (
+        with_favorites(with_ratings(Activity.objects.filter(status="published")), request.user)
+        .filter(is_favorite=True)
+        .annotate(favorited_at=Subquery(my_favorites.values("created_at")[:1]))
+        .select_related("category", "location")
+        .order_by("-favorited_at")
+    )
+    return render(request, "guide/favorites.html", {"activities": activities})
+
+
+@login_required
+@require_POST
+def toggle_favorite(request, pk):
+    # Herz anklicken: Favorit hinzufügen, nochmals anklicken: wieder entfernen
+    activity = get_object_or_404(Activity, pk=pk, status="published")
+    favorite, created = Favorite.objects.get_or_create(user=request.user, activity=activity)
+    if not created:
+        favorite.delete()
+
+    if is_ajax(request):
+        # Antwort für das JavaScript (ohne Seite neu zu laden)
+        return JsonResponse({"ok": True, "is_favorite": created})
+
+    # Ohne JavaScript: zurück zur Seite, von der man kam
+    next_url = request.POST.get("next", "")
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+    return redirect("activity_detail", pk=activity.pk)
 
 
 @login_required

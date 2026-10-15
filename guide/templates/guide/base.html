@@ -268,6 +268,47 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 {% endif %}
 
+    {% if user.is_authenticated %}
+<script>
+// Favoriten-Herz: im Hintergrund speichern, ohne die Seite neu zu laden
+document.addEventListener("submit", async function (e) {
+    const form = e.target.closest(".fav-form");
+    if (!form) return;
+    e.preventDefault();
+
+    const button = form.querySelector(".fav-btn");
+    button.disabled = true;
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),  // enthält auch das CSRF-Token
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        const data = await response.json();
+        if (!data.ok) throw new Error();
+
+        button.classList.toggle("is-favorite", data.is_favorite);
+        button.setAttribute("aria-pressed", data.is_favorite);
+        button.setAttribute("aria-label", data.is_favorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen");
+        // Herz austauschen (auf der Detailseite steht es in .fav-icon, auf den Karten direkt im Knopf)
+        const icon = button.querySelector(".fav-icon") || button;
+        icon.textContent = data.is_favorite ? "♥" : "♡";
+        const text = button.querySelector(".fav-text");
+        if (text) text.textContent = data.is_favorite ? "Gespeichert" : "Speichern";
+
+        // Auf der Favoriten-Seite: Karte entfernen, wenn das Herz weg ist
+        if (!data.is_favorite && form.closest("[data-favorites-page]")) {
+            form.closest(".activity-col").remove();
+        }
+    } catch (err) {
+        form.submit();  // falls etwas schiefgeht: normal abschicken
+    } finally {
+        button.disabled = false;
+    }
+});
+</script>
+    {% endif %}
+
     <!-- Platz für Skripte einzelner Seiten -->
     {% block scripts %}{% endblock %}
 

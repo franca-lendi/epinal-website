@@ -1,0 +1,50 @@
+{% load guide_extras %}
+{# Eine Aktivitäten-Karte. Wird auf "Aktivitäten" und "Favoriten" eingebunden (mit include). #}
+<div class="col-md-6 col-lg-4 activity-col">
+    <div class="card h-100 activity-card position-relative">
+
+        <div class="card-img-wrapper">
+            {% if activity.image %}
+                <img src="{{ activity.image.url }}" class="card-img-top"
+                     alt="{{ activity.title }}">
+            {% else %}
+                <img src="https://placehold.co/600x400" class="card-img-top"
+                     alt="Kein Bild vorhanden">
+            {% endif %}
+            {% include "guide/_fav_button.html" %}
+        </div>
+
+        <div class="card-body">
+            <span class="badge bg-success mb-2">{{ activity.category.name }}</span>
+            <h5 class="card-title">{{ activity.title }}</h5>
+            <p class="card-text">{{ activity.description|truncatechars:100 }}</p>
+
+            <p class="text-muted small mb-0">
+                {% if activity.event_date %}
+                    📅 {{ activity.event_date|date:"j. F" }}<br>
+                {% endif %}
+
+                📍 {{ activity.location.city }}<br>
+
+                💰 {% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}<br>
+
+                {% if activity.duration_minutes %}
+                    ⏱ {{ activity.duration_minutes }} Min.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="stars" title="{{ activity.avg_rating|default:0|floatformat:1 }} von 5">
+                {% if activity.rating_count %}
+                    {{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small>
+                {% else %}
+                    <small class="text-muted">Noch keine Bewertung</small>
+                {% endif %}
+            </span>
+            <!-- stretched-link = die ganze Karte ist klickbar -->
+            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-primary btn-sm stretched-link">Mehr erfahren</a>
+        </div>
+
+    </div>
+</div>

@@ -28,6 +28,9 @@ urlpatterns = [
 
     path("favorites/", views.favorites, name="favorites"),
 
+    # NEU: Herz anklicken (Favorit hinzufügen oder entfernen)
+    path("activities/<int:pk>/favorite/", views.toggle_favorite, name="toggle_favorite"),
+
     # NEU: Deine Uploads
     path("uploads/", views.my_uploads, name="my_uploads"),
 

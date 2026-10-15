@@ -6,6 +6,19 @@
 
 <h1>Favoriten</h1>
 
-<p>Hier findest du deine gespeicherten Aktivitäten.</p>
+<p class="text-muted">Hier findest du deine gespeicherten Aktivitäten.</p>
+
+<!-- data-favorites-page: auf dieser Seite verschwindet eine Karte, wenn man das Herz entfernt -->
+<div class="row g-4 mt-2" data-favorites-page>
+    {% for activity in activities %}
+        {% include "guide/_activity_card.html" %}
+    {% empty %}
+        <div class="text-center text-muted py-5">
+            <div class="display-4 mb-3">♡</div>
+            <p>Du hast noch keine Favoriten. Tippe bei einer Aktivität auf das Herz, um sie hier zu speichern.</p>
+            <a href="{% url 'activities' %}" class="btn btn-outline-primary">Aktivitäten entdecken</a>
+        </div>
+    {% endfor %}
+</div>
 
 {% endblock %}
