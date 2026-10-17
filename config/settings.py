@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'guide.middleware.VisitCounterMiddleware',  # NEU: Besucherzähler (muss nach Session und Auth kommen)
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -131,14 +132,15 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Login mit Benutzername ODER E-Mail (siehe guide/backends.py)
+AUTHENTICATION_BACKENDS = ["guide.backends.EmailOrUsernameBackend"]
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+
+# Email
+# Die Website verschickt keine E-Mails (Kontaktnachrichten stehen im Admin).
+# "MAILERS" aus Django 6 gibt es in Django 5.2 nicht, dort heisst es EMAIL_BACKEND.
+# Falls Django doch einmal eine E-Mail schreibt, erscheint sie nur im Terminal.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

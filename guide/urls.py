@@ -36,6 +36,13 @@ urlpatterns = [
 
     path("add/", views.add_activity, name="add_activity"),
 
+    # NEU: Über mich und Kontakt
+    path("about/", views.about, name="about"),
+
+    path("about/edit/", views.about_edit, name="about_edit"),
+
+    path("contact/", views.contact, name="contact"),
+
     path("register/", views.register, name="register"),
 
     path("accounts/login/", views.login_view, name="login"),

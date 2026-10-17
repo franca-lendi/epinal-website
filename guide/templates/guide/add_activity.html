@@ -34,8 +34,12 @@
             <h4 class="mb-3">Standortinformationen</h4>
             {% include "guide/_field.html" with field=form.title %}
             {% include "guide/_field.html" with field=form.category %}
-            {% include "guide/_field.html" with field=form.address %}
-            {% include "guide/_field.html" with field=form.city %}
+            <!-- NEU: nur sichtbar, wenn bei der Kategorie "Andere" gewählt ist -->
+            <div id="newCategoryBox" {% if not form.new_category.value %}class="d-none"{% endif %}>
+                {% include "guide/_field.html" with field=form.new_category %}
+            </div>
+            <!-- NEU: Adresse mit Vorschlägen und Karte (füllt auch die Koordinaten aus) -->
+            {% include "guide/_address_picker.html" %}
             {% include "guide/_field.html" with field=form.description %}
             {% include "guide/_field.html" with field=form.price %}
             {% include "guide/_field.html" with field=form.duration_minutes %}
@@ -102,10 +106,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
         }
+        // NEU: ohne Ort auf der Karte nicht weiter (Koordinaten braucht es für Distanz und Karte)
+        if (!document.getElementById("{{ form.latitude.id_for_label }}").value) {
+            const address = document.getElementById("{{ form.address.id_for_label }}");
+            address.setCustomValidity("Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte.");
+            address.reportValidity();
+            address.addEventListener("input", () => address.setCustomValidity(""), { once: true });
+            return;
+        }
         show(2);
     });
 
     document.getElementById("toStep1").addEventListener("click", () => show(1));
+
+    // NEU: Feld für einen eigenen Vorschlag nur bei "Andere" zeigen
+    const categorySelect = document.getElementById("{{ form.category.id_for_label }}");
+    const newCategoryBox = document.getElementById("newCategoryBox");
+    function updateNewCategory() {
+        const option = categorySelect.options[categorySelect.selectedIndex];
+        newCategoryBox.classList.toggle("d-none", !option || option.text !== "Andere");
+    }
+    categorySelect.addEventListener("change", updateNewCategory);
+    updateNewCategory();
 
     show(parseInt(form.dataset.startStep, 10) || 1);
 });

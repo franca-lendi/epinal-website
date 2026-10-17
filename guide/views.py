@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
@@ -13,8 +14,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .forms import RegisterForm, ActivityForm, PhotoForm, ReportForm, ReviewForm
-from .models import Activity, ActivityImage, Category, Favorite, Location, Rating
+from .forms import RegisterForm, ActivityForm, ContactForm, PhotoForm, ReportForm, ReviewForm, SiteInfoForm
+from .models import Activity, ActivityImage, Category, Favorite, Location, Rating, SiteInfo, VisitCounter
 
 
 def with_ratings(queryset):
@@ -34,6 +35,53 @@ def with_favorites(queryset, user):
     )
 
 
+# ---------- NEU: Ansichten Kacheln / Tabelle / Karte ----------
+VIEWS = ("cards", "table", "map")
+
+
+def get_view(request, allowed=VIEWS):
+    # Welche Ansicht steht in der Adresse? (?view=map) Sonst Kacheln.
+    view = request.GET.get("view")
+    return view if view in allowed else "cards"
+
+
+def map_points(activities):
+    # Für die Kartenansicht: Titel, Link und Koordinaten jeder Aktivität.
+    # Nur Aktivitäten mit Koordinaten (kommen von der Adresssuche) können auf die Karte.
+    points = []
+    for activity in activities:
+        location = activity.location
+        if location.latitude is None or location.longitude is None:
+            continue
+        points.append({
+            "id": activity.pk,  # verbindet die Nadel mit dem Eintrag in der Liste daneben
+            "title": activity.title,
+            "url": reverse("activity_detail", args=[activity.pk]),
+            "category": activity.category.label,
+            "price": "Kostenlos" if activity.price == 0 else f"{activity.price} €",
+            "lat": float(location.latitude),
+            "lng": float(location.longitude),
+        })
+    return points
+
+
+def category_tree():
+    # Für den Filter: Hauptkategorien, darunter ihre Unterkategorien, je mit der Anzahl veröffentlichter Aktivitäten.
+    # Bei der Hauptkategorie zählen alle Unterkategorien mit (auch Vorschläge, die noch nicht freigegeben sind).
+    counts = dict(
+        Activity.objects.filter(status="published").values_list("category").annotate(n=Count("id"))
+    )
+    all_categories = list(Category.objects.order_by("position", "name"))
+    mains = [c for c in all_categories if c.parent_id is None]
+    for main in mains:
+        children = [c for c in all_categories if c.parent_id == main.pk]
+        main.subs = [c for c in children if c.approved]  # nur freigegebene im Filter zeigen
+        for sub in main.subs:
+            sub.activity_count = counts.get(sub.pk, 0)
+        main.activity_count = counts.get(main.pk, 0) + sum(counts.get(c.pk, 0) for c in children)
+    return mains
+
+
 def own_activity_or_404(request, pk):
     # Nur wer die Aktivität erstellt hat, darf sie bearbeiten oder löschen
     return get_object_or_404(Activity, pk=pk, user=request.user)
@@ -50,7 +98,7 @@ def login_view(request):
         if form.is_valid():
             login(request, form.get_user())
             return JsonResponse({"ok": True})
-        return JsonResponse({"ok": False, "errors": {"login": ["Benutzername oder Passwort falsch."]}})
+        return JsonResponse({"ok": False, "errors": {"login": ["Benutzername/E-Mail oder Passwort falsch."]}})
 
     # Alles andere: zurück zur Seite, Kästchen geht automatisch auf
     url = reverse("activities") + "?login=1"
@@ -85,7 +133,7 @@ def parse_date(value):
 
 
 def activities(request):
-    activities = Activity.objects.filter(status="published").select_related("category", "location")
+    activities = Activity.objects.filter(status="published").select_related("category__parent", "location")
 
     # ---------- Suche ----------
     # Sucht im Namen, in der Beschreibung, in der Kategorie und in der Adresse
@@ -96,14 +144,22 @@ def activities(request):
                 Q(title__icontains=word)
                 | Q(description__icontains=word)
                 | Q(category__name__icontains=word)
+                | Q(category__parent__name__icontains=word)  # "sport" findet auch Fussball
                 | Q(location__address__icontains=word)
                 | Q(location__city__icontains=word)
             )
 
     # ---------- Filter: Kategorie (mehrere möglich) ----------
+    # Hauptkategorie gewählt = auch alle ihre Unterkategorien
     selected_categories = [c for c in request.GET.getlist("category") if c.isdigit()]
+    category_count = 0
     if selected_categories:
-        activities = activities.filter(category_id__in=selected_categories)
+        chosen = list(Category.objects.filter(pk__in=selected_categories))
+        chosen_ids = {c.pk for c in chosen}
+        ids = chosen_ids | set(Category.objects.filter(parent_id__in=chosen_ids).values_list("pk", flat=True))
+        activities = activities.filter(category_id__in=ids)
+        # Zahl auf dem Knopf: Unterkategorien nicht doppelt zählen, wenn ihre Hauptkategorie gewählt ist
+        category_count = sum(1 for c in chosen if c.parent_id not in chosen_ids)
 
     # ---------- Filter: Preis (höchstens ...) ----------
     try:
@@ -128,14 +184,19 @@ def activities(request):
 
     # Wie viele Filter sind aktiv? (für die Zahl auf den Knöpfen)
     active = {
-        "category": len(selected_categories),
+        "category": category_count,
         "date": int(bool(date_from or date_to)),
         "price": int(max_price < PRICE_MAX),
     }
 
+    # Bei den Aktivitäten gibt es nur Kacheln und Karte (eine Tabelle bringt hier nichts)
+    view = get_view(request, allowed=("cards", "map"))
+
     return render(request, "guide/activities.html", {
         "activities": activities,
-        "categories": Category.objects.order_by("name"),
+        "view": view,
+        "map_points": map_points(activities) if view == "map" else [],
+        "categories": category_tree(),
         "query": query,
         "selected_categories": selected_categories,
         "max_price": int(max_price),
@@ -149,7 +210,7 @@ def activities(request):
 
 def activity_detail(request, pk):
     activity = get_object_or_404(
-        with_favorites(with_ratings(Activity.objects.select_related("category", "location", "user")), request.user),
+        with_favorites(with_ratings(Activity.objects.select_related("category__parent", "location", "user")), request.user),
         pk=pk,
     )
     # Entwürfe sieht nur die eigene Person
@@ -184,10 +245,15 @@ def favorites(request):
         with_favorites(with_ratings(Activity.objects.filter(status="published")), request.user)
         .filter(is_favorite=True)
         .annotate(favorited_at=Subquery(my_favorites.values("created_at")[:1]))
-        .select_related("category", "location")
+        .select_related("category__parent", "location")
         .order_by("-favorited_at")
     )
-    return render(request, "guide/favorites.html", {"activities": activities})
+    view = get_view(request)
+    return render(request, "guide/favorites.html", {
+        "activities": activities,
+        "view": view,
+        "map_points": map_points(activities) if view == "map" else [],
+    })
 
 
 @login_required
@@ -220,23 +286,36 @@ def add_activity(request, pk=None):
         form = ActivityForm(request.POST, request.FILES, instance=activity)
         if form.is_valid():
             new_activity = form.save(commit=False)
-            if activity:
-                # Bearbeiten: bestehende Location anpassen
-                location = activity.location
-                location.address = form.cleaned_data["address"]
-                location.city = form.cleaned_data["city"]
-                location.save()
-            else:
+            # Ort speichern (neu oder bestehenden anpassen), inkl. Koordinaten aus der Adresssuche
+            location = activity.location if activity else Location()
+            for field in ["address", "postal_code", "city", "latitude", "longitude"]:
+                setattr(location, field, form.cleaned_data[field])
+            location.save()
+            new_activity.location = location
+            if not activity:
                 new_activity.user = request.user
-                new_activity.location = Location.objects.create(
-                    address=form.cleaned_data["address"],
-                    city=form.cleaned_data["city"],
+            # NEU: "Andere" + eigener Vorschlag -> neue Unterkategorie, aber erst nach Freigabe im Filter sichtbar.
+            # Gibt es sie schon (gross/klein egal), wird die bestehende genommen statt einer doppelten.
+            suggestion = form.cleaned_data.get("new_category", "").strip()
+            if suggestion:
+                new_activity.category, _ = Category.objects.get_or_create(
+                    parent=new_activity.category.parent,
+                    name__iexact=suggestion,
+                    defaults={"name": suggestion, "approved": False, "position": 50},
                 )
             # Knopf "Als Entwurf speichern" oder "Senden"
             was_published = activity is not None and activity.status == "published"
-            new_activity.status = "draft" if "save_draft" in request.POST else "published"
+            in_review = activity is not None and activity.status == "review"
+            if in_review:
+                # Gemeldet: bleibt in Prüfung, bis der Admin sie freigibt (sonst könnte man die Prüfung umgehen)
+                new_activity.status = "review"
+            else:
+                new_activity.status = "draft" if "save_draft" in request.POST else "published"
             new_activity.save()
 
+            if in_review:
+                messages.success(request, "Gespeichert. Die Aktivität bleibt in Prüfung, bis sie freigegeben wird.")
+                return redirect("my_uploads")
             if new_activity.status == "draft":
                 messages.success(request, "Als Entwurf gespeichert. Du findest ihn unter «Deine Uploads».")
                 return redirect("my_uploads")
@@ -252,7 +331,14 @@ def add_activity(request, pk=None):
     else:
         initial = {}
         if activity:
-            initial = {"address": activity.location.address, "city": activity.location.city}
+            location = activity.location
+            initial = {
+                "address": location.address,
+                "postal_code": location.postal_code,
+                "city": location.city,
+                "latitude": location.latitude,
+                "longitude": location.longitude,
+            }
         form = ActivityForm(instance=activity, initial=initial)
 
     return render(request, "guide/add_activity.html", {
@@ -301,10 +387,11 @@ def my_uploads(request):
     sort = request.GET.get("sort", "newest")
     if sort not in SORT_OPTIONS:
         sort = "newest"
-    view = "table" if request.GET.get("view") == "table" else "cards"
+    view = get_view(request)
 
-    activities = with_ratings(mine.select_related("category", "location")).order_by(*SORT_OPTIONS[sort][1])
-    page = Paginator(activities, 9).get_page(request.GET.get("page"))
+    activities = with_ratings(mine.select_related("category__parent", "location")).order_by(*SORT_OPTIONS[sort][1])
+    # 8 pro Seite: zusammen mit der "Füge hinzu"-Karte gibt das 3 volle Reihen à 3
+    page = Paginator(activities, 8).get_page(request.GET.get("page"))
 
     return render(request, "guide/my_uploads.html", {
         "page": page,
@@ -313,6 +400,9 @@ def my_uploads(request):
         "sort": sort,
         "sort_options": {key: label for key, (label, _) in SORT_OPTIONS.items()},
         "view": view,
+        # Karte und Liste daneben zeigen alle Uploads dieses Tabs (nicht nur die 8 von dieser Seite)
+        "map_list": activities if view == "map" else [],
+        "map_points": map_points(activities) if view == "map" else [],
     })
 
 
@@ -325,7 +415,7 @@ def review_activity(request, pk):
     rating = Rating.objects.filter(user=request.user, activity=activity).first()
 
     if request.method == "POST":
-        form = ReviewForm(request.POST)
+        form = ReviewForm(request.POST, request.FILES)  # FILES = die Fotos
         if form.is_valid():
             Rating.objects.update_or_create(
                 user=request.user, activity=activity,
@@ -334,9 +424,11 @@ def review_activity(request, pk):
                     "title": form.cleaned_data["title"],
                     "text": form.cleaned_data["text"],
                     "visited_on": form.visited_date(),
-                    "companions": form.cleaned_data["companions"],
                 },
             )
+            # Fotos aus der Bewertung erscheinen bei den Fotos der Aktivität
+            for photo in form.cleaned_data["photos"]:
+                ActivityImage.objects.create(activity=activity, user=request.user, image=photo)
             messages.success(request, "Danke für deine Bewertung!")
             return redirect("activity_detail", pk=activity.pk)
     else:
@@ -346,7 +438,6 @@ def review_activity(request, pk):
                 "rating": rating.rating,
                 "title": rating.title,
                 "text": rating.text,
-                "companions": rating.companions,
             }
             if rating.visited_on:
                 initial["visited"] = rating.visited_on.strftime("%Y-%m")
@@ -390,6 +481,12 @@ def report_activity(request, pk, kind):
         report.save()
         if kind == "error":
             messages.success(request, "Danke! Wir prüfen den Fehler und korrigieren ihn.")
+        elif report.reason == "inappropriate":
+            # Unangemessen: sofort ausblenden, bis ein Admin es geprüft hat
+            activity.status = "review"
+            activity.save(update_fields=["status"])
+            messages.success(request, "Danke für deine Meldung. Die Aktivität ist ausgeblendet, bis wir sie geprüft haben.")
+            return redirect("activities")
         else:
             messages.success(request, "Danke für deine Meldung. Wir schauen sie uns an.")
     else:
@@ -398,3 +495,54 @@ def report_activity(request, pk, kind):
         else:
             messages.error(request, "Bitte wähle einen Grund aus.")
     return redirect("activity_detail", pk=activity.pk)
+
+
+# ---------- NEU: Über mich ----------
+
+def about(request):
+    info = SiteInfo.load()
+    # Ein paar Zahlen, die sich von selbst aktualisieren
+    stats = {
+        "activities": Activity.objects.filter(status="published").count(),
+        "ratings": Rating.objects.filter(activity__status="published").count(),
+        "categories": Category.objects.filter(parent=None).count(),  # nur Hauptkategorien
+        "visitors": VisitCounter.load().visitors,
+    }
+    return render(request, "guide/about.html", {"info": info, "stats": stats})
+
+
+@staff_member_required  # nur Admin (is_staff) darf bearbeiten, alle anderen landen beim Admin-Login
+def about_edit(request):
+    info = SiteInfo.load()
+    if request.method == "POST":
+        form = SiteInfoForm(request.POST, request.FILES, instance=info)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "«Über mich» wurde gespeichert.")
+            return redirect("about")
+    else:
+        form = SiteInfoForm(instance=info)
+    return render(request, "guide/about_edit.html", {"form": form, "info": info})
+
+
+# ---------- NEU: Kontakt ----------
+
+def contact(request):
+    info = SiteInfo.load()
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            if request.user.is_authenticated:
+                message.user = request.user
+            message.save()  # steht danach im Admin unter "Contact messages"
+            messages.success(request, "Danke für deine Nachricht! Ich melde mich so bald wie möglich.")
+            return redirect("contact")
+    else:
+        # Angemeldet: Name und E-Mail schon ausfüllen. ?topic=problem wählt das Thema vor (Link im Footer)
+        initial = {"topic": request.GET.get("topic", "question")}
+        if request.user.is_authenticated:
+            initial.update({"name": request.user.username, "email": request.user.email})
+        form = ContactForm(initial=initial)
+    return render(request, "guide/contact.html", {"form": form, "info": info})
+

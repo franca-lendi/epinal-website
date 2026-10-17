@@ -1,0 +1,140 @@
+{% load guide_extras %}
+{% comment %}
+Karten-Ansicht: links eine Liste zum Scrollen, rechts die Karte (auf dem Handy: Karte oben, Liste darunter).
+Jede Aktivität mit Adresse ist eine grüne Nadel. Fährt man mit der Maus über einen Eintrag, öffnet sich
+die passende Nadel. Klickt man auf eine Nadel, wird der Eintrag in der Liste markiert.
+Gleiche Karte wie bei der Adresssuche: Leaflet mit Kartenbildern von OpenStreetMap (gratis, kein Schlüssel).
+map_list = die Aktivitäten für die Liste, map_points = Koordinaten für die Nadeln (aus der View, mit json_script).
+show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
+{% endcomment %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+
+<div class="row g-3">
+
+    <!-- Liste (auf dem Computer links und scrollbar) -->
+    <div class="col-lg-5 order-2 order-lg-1">
+        <div class="map-list" id="mapList">
+            {% for activity in map_list %}
+                <!-- activity-col: damit das Herz-Skript den Eintrag auf der Favoriten-Seite entfernen kann -->
+                <div class="map-list-item activity-col" data-id="{{ activity.pk }}">
+                    <div class="map-list-img">
+                        {% if activity.image %}
+                            <img src="{{ activity.image.url }}" alt="">
+                        {% else %}
+                            <div class="img-placeholder"><i class="bi bi-image"></i></div>
+                        {% endif %}
+                    </div>
+
+                    <div class="map-list-body">
+                        {% if show_status %}
+                            {% include "guide/_status_badge.html" %}
+                        {% else %}
+                            <span class="badge bg-success">{{ activity.category.label }}</span>
+                        {% endif %}
+                        <!-- stretched-link = der ganze Eintrag ist klickbar -->
+                        <a href="{% url 'activity_detail' activity.pk %}" class="map-list-title stretched-link">{{ activity.title }}</a>
+                        <span class="small text-muted">
+                            <i class="bi bi-geo-alt me-1"></i>{{ activity.location.city }} ·
+                            {% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}
+                        </span>
+                        <span class="small stars">
+                            {% if activity.rating_count %}
+                                {{ activity.avg_rating|stars }} <span class="text-muted">({{ activity.rating_count }})</span>
+                            {% else %}
+                                <span class="text-muted">Noch keine Bewertung</span>
+                            {% endif %}
+                        </span>
+                        {% if activity.location.latitude is None or activity.location.longitude is None %}
+                            <span class="small text-muted fst-italic">Nicht auf der Karte (keine genaue Adresse)</span>
+                        {% endif %}
+                    </div>
+
+                    {% if not show_status %}
+                        <div class="map-list-fav">{% include "guide/_fav_button.html" %}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Karte (auf dem Computer rechts) -->
+    <div class="col-lg-7 order-1 order-lg-2">
+        <div id="activitiesMap" class="activities-map"></div>
+    </div>
+
+</div>
+
+{{ map_points|json_script:"mapPoints" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+(function () {
+    const points = JSON.parse(document.getElementById("mapPoints").textContent);
+    const list = document.getElementById("mapList");
+    const EPINAL = [48.1724, 6.4496];  // Zentrum von Épinal (Breite, Länge)
+
+    const map = L.map("activitiesMap").setView(EPINAL, 13);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
+        referrerPolicy: "strict-origin-when-cross-origin",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+    }).addTo(map);
+
+    // Eigene Nadel in unserem Grün (Bootstrap-Icon statt dem blauen Standard-Bild)
+    const pin = L.divIcon({
+        className: "map-pin",
+        html: '<i class="bi bi-geo-alt-fill"></i>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],   // Spitze der Nadel zeigt auf den Ort
+        popupAnchor: [0, -30],
+    });
+
+    // Eintrag in der Liste markieren (und auf Wunsch dorthin scrollen)
+    function highlight(id, scroll) {
+        list.querySelectorAll(".map-list-item.active").forEach(function (el) { el.classList.remove("active"); });
+        const item = list.querySelector('[data-id="' + id + '"]');
+        if (!item) return;
+        item.classList.add("active");
+        if (scroll) list.scrollTo({ top: item.offsetTop - 8, behavior: "smooth" });
+    }
+
+    const markers = {};  // id der Aktivität -> Nadel
+    points.forEach(function (point) {
+        // Kästchen beim Anklicken. Mit textContent gebaut: so kann ein Titel kein HTML einschleusen.
+        const box = document.createElement("div");
+        const link = document.createElement("a");
+        link.href = point.url;
+        link.className = "map-popup-title";
+        link.textContent = point.title;
+        const info = document.createElement("div");
+        info.className = "small text-muted";
+        info.textContent = point.category + " · " + point.price;
+        box.append(link, info);
+
+        const marker = L.marker([point.lat, point.lng], { icon: pin }).bindPopup(box);
+        marker.on("click", function () { highlight(point.id, true); });
+        markers[point.id] = marker;
+    });
+
+    // Karte so zoomen, dass alle Nadeln sichtbar sind
+    const all = Object.values(markers);
+    if (all.length) {
+        const group = L.featureGroup(all).addTo(map);
+        map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 15 });
+    }
+
+    // Maus über einem Eintrag: passende Nadel hervorheben und ihr Kästchen öffnen
+    list.querySelectorAll(".map-list-item").forEach(function (item) {
+        const marker = markers[item.dataset.id];
+        if (!marker) return;  // Aktivität ohne Adresse
+        item.addEventListener("mouseenter", function () {
+            marker.getElement().classList.add("is-active");
+            marker.openPopup();
+            highlight(item.dataset.id, false);
+        });
+        item.addEventListener("mouseleave", function () {
+            marker.getElement().classList.remove("is-active");
+        });
+    });
+})();
+</script>

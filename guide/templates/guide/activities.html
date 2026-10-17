@@ -12,11 +12,13 @@
          beim Abschicken landen die Eingaben in der Adresse, z.B. /activities/?q=park&max_price=20
          und die View filtert danach. So kann man eine gefilterte Liste auch als Link teilen. -->
     <form method="get" action="{% url 'activities' %}" id="filterForm">
+    <!-- gewählte Ansicht (Kacheln/Tabelle/Karte) beim Suchen und Filtern behalten -->
+    <input type="hidden" name="view" value="{{ view }}">
 
     <!-- Suchleiste + Aktivität hinzufügen -->
     <div class="row g-2 mb-4 align-items-center">
         <div class="col">
-            <div class="input-group input-group-lg">
+            <div class="input-group input-group-lg search-bar">
                 <span class="input-group-text bg-white">
                     <i class="bi bi-search"></i>
                 </span>
@@ -28,11 +30,11 @@
                     placeholder="Suche nach Aktivitäten, Orten …"
                     aria-label="Suche nach Aktivitäten"
                 > <!-- name="q" = so heisst die Suche in der Adresse, Enter schickt ab -->
-                <button type="submit" class="btn btn-dark px-4">Suchen</button>
+                <button type="submit" class="btn btn-primary px-4">Suchen</button>
             </div>
         </div>
         <div class="col-12 col-md-auto">
-            <a href="{% url 'add_activity' %}" class="btn btn-primary btn-lg w-100">
+            <a href="{% url 'add_activity' %}" class="btn btn-outline-primary btn-lg w-100">
                 <i class="bi bi-plus-lg me-1"></i> Füge deine Aktivität hinzu
             </a>
         </div>
@@ -44,25 +46,39 @@
         <!-- Kategorie -->
         <div class="col-6 col-lg"> <!-- jeder filter eigene spalte -->
             <button
-                class="btn {% if active.category %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
+                class="btn {% if active.category %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100 filter-btn"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#kategorieFilter"
             > <!-- bootstrap auf und zu klappen, sucht nach element mit dieser id -->
-                Kategorie{% if active.category %} ({{ active.category }}){% endif %} ▼
+                Kategorie{% if active.category %} ({{ active.category }}){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="kategorieFilter"> <!-- das hier aufklappen -->
                 <div class="border rounded p-3 filter-box"> <!-- p=padding innenabstand -->
                     <!-- Kategorien kommen jetzt aus der Datenbank.
                          Alle Checkboxen heissen "category", dadurch kann man mehrere wählen -->
-                    {% for category in categories %}
+                    <!-- NEU: Hauptkategorie und darunter eingerückt ihre Unterkategorien, je mit Anzahl.
+                         Hauptkategorie anklicken = alle Unterkategorien (JavaScript unten, die View macht es auch ohne) -->
+                    {% for main in categories %}
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="category"
-                                   value="{{ category.id }}" id="cat{{ category.id }}"
-                                   {% if category.id|stringformat:"s" in selected_categories %}checked{% endif %}>
-                            <label class="form-check-label" for="cat{{ category.id }}">{{ category.name }}</label>
+                            <input class="form-check-input cat-main" type="checkbox" name="category"
+                                   value="{{ main.id }}" id="cat{{ main.id }}"
+                                   {% if main.id|stringformat:"s" in selected_categories %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="cat{{ main.id }}">
+                                {{ main.name }} <span class="text-muted fw-normal">({{ main.activity_count }})</span>
+                            </label>
                         </div>
+                        {% for sub in main.subs %}
+                            <div class="form-check cat-sub-row">
+                                <input class="form-check-input cat-sub" type="checkbox" name="category"
+                                       value="{{ sub.id }}" id="cat{{ sub.id }}" data-parent="{{ main.id }}"
+                                       {% if sub.id|stringformat:"s" in selected_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="cat{{ sub.id }}">
+                                    {{ sub.name }} <span class="text-muted">({{ sub.activity_count }})</span>
+                                </label>
+                            </div>
+                        {% endfor %}
                     {% endfor %}
                 </div>
             </div>
@@ -72,12 +88,12 @@
         <!-- Datum -->
         <div class="col-6 col-lg">
             <button
-                class="btn {% if active.date %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
+                class="btn {% if active.date %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100 filter-btn"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#datumFilter"
             >
-                Datum{% if active.date %} (1){% endif %} ▼
+                Datum{% if active.date %} (1){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="datumFilter">
@@ -101,12 +117,12 @@
         <!-- Preis -->
         <div class="col-6 col-lg">
             <button
-                class="btn {% if active.price %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100"
+                class="btn {% if active.price %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100 filter-btn"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#preisFilter"
             >
-                Preis{% if active.price %} (bis {{ max_price }} €){% endif %} ▼
+                Preis{% if active.price %} (bis {{ max_price }} €){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="preisFilter">
@@ -138,9 +154,9 @@
 
         <!-- Distanz: braucht Koordinaten bei den Aktivitäten, kommt später -->
         <div class="col-6 col-lg">
-            <button class="btn btn-outline-secondary w-100" type="button" disabled
+            <button class="btn btn-outline-secondary w-100 filter-btn" type="button" disabled
                     title="Kommt, sobald die Aktivitäten Koordinaten haben">
-                Distanz ▼
+                Distanz<i class="bi bi-chevron-down"></i>
             </button>
         </div>
 
@@ -164,31 +180,56 @@
             {% if any_filter %}Suchergebnisse{% else %}Alle Aktivitäten{% endif %}
             <small class="text-muted fs-6">({{ activities|length }})</small>
         </h2>
-        {% if any_filter %}
-            <!-- einfach die Seite ohne Filter laden -->
-            <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-x-circle me-1"></i>Alle Filter zurücksetzen</a>
-        {% endif %}
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            {% if any_filter %}
+                <!-- Seite ohne Filter laden, aber die Ansicht behalten -->
+                <a href="{% url 'activities' %}{% if view != 'cards' %}?view={{ view }}{% endif %}" class="link-secondary small"><i class="bi bi-x-circle me-1"></i>Alle Filter zurücksetzen</a>
+            {% endif %}
+            {% include "guide/_view_switch.html" with no_table=True %}
+        </div>
     </div>
 
-    <div class="row g-4"> <!-- bootstrap zeile mit abstand 4 -->
+    {% if not activities %}
+        {% if any_filter %}
+            <p class="text-muted">Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern.</p>
+        {% else %}
+            <p>Noch keine Aktivitäten vorhanden.</p>
+        {% endif %}
 
-        {% for activity in activities %}
-            {% include "guide/_activity_card.html" %}
-        {% empty %}
-            {% if any_filter %}
-                <p class="text-muted">Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern.</p>
-            {% else %}
-                <p>Noch keine Aktivitäten vorhanden.</p>
-            {% endif %}
-        {% endfor %}
+    {% elif view == "map" %}
+        {% include "guide/_activity_map.html" with map_list=activities %}
 
-    </div> <!-- Ende row der Karten -->
+    {% else %}
+        <div class="row g-4"> <!-- bootstrap zeile mit abstand 4 -->
+            {% for activity in activities %}
+                {% include "guide/_activity_card.html" %}
+            {% endfor %}
+        </div> <!-- Ende row der Karten -->
+    {% endif %}
 
 </div> <!-- Ende container-fluid -->
 {% endblock %}
 
 {% block scripts %}
 <script>
+// NEU: Kategorie-Filter. Hauptkategorie an/aus = alle ihre Unterkategorien an/aus.
+// Nimmt man eine Unterkategorie weg, ist die Hauptkategorie nicht mehr ganz gewählt.
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".cat-main").forEach(function (main) {
+        const subs = document.querySelectorAll('.cat-sub[data-parent="' + main.value + '"]');
+        if (!subs.length) return;
+        if (main.checked) subs.forEach(function (sub) { sub.checked = true; });
+        main.addEventListener("change", function () {
+            subs.forEach(function (sub) { sub.checked = main.checked; });
+        });
+        subs.forEach(function (sub) {
+            sub.addEventListener("change", function () {
+                main.checked = Array.from(subs).every(function (x) { return x.checked; });
+            });
+        });
+    });
+});
+
 // Preis neben dem Schieberegler anzeigen (ganz rechts = "egal")
 document.addEventListener("DOMContentLoaded", function () {
     const range = document.getElementById("priceRange");

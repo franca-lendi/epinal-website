@@ -1,5 +1,7 @@
 {% if activity.status == 'published' %}
     <span class="badge badge-published">Veröffentlicht</span>
+{% elif activity.status == 'review' %}
+    <span class="badge badge-review" title="Wurde als unangemessen gemeldet und ist ausgeblendet, bis sie geprüft ist">In Prüfung</span>
 {% else %}
     <span class="badge badge-draft">Entwurf</span>
 {% endif %}

@@ -1,0 +1,37 @@
+{% load guide_extras %}
+{# Tabellen-Ansicht für "Aktivitäten" und "Favoriten" (Deine Uploads hat eine eigene mit Status und Bearbeiten). #}
+<div class="table-responsive">
+    <table class="table align-middle activity-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Kategorie</th>
+                <th>Ort</th>
+                <th>Preis</th>
+                <th>Datum</th>
+                <th>Bewertung</th>
+                <th><span class="visually-hidden">Favorit</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for activity in activities %}
+            <!-- activity-col: damit das Herz-Skript die Zeile auf der Favoriten-Seite entfernen kann (wie bei den Kacheln) -->
+            <tr class="activity-col">
+                <td><a href="{% url 'activity_detail' activity.pk %}" class="fw-semibold text-decoration-none">{{ activity.title }}</a></td>
+                <td><span class="badge bg-success">{{ activity.category.label }}</span></td>
+                <td>{{ activity.location.city }}</td>
+                <td class="text-nowrap">{% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}</td>
+                <td class="text-nowrap">{% if activity.event_date %}{{ activity.event_date|date:"j. F" }}{% else %}–{% endif %}</td>
+                <td class="stars text-nowrap">
+                    {% if activity.rating_count %}
+                        {{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small>
+                    {% else %}
+                        <small class="text-muted">–</small>
+                    {% endif %}
+                </td>
+                <td class="fav-cell text-end">{% include "guide/_fav_button.html" %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

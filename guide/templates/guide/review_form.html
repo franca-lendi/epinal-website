@@ -22,20 +22,21 @@
         </div>
     </div>
 
-    <!-- Rechts: Formular -->
+    <!-- Rechts: Formular. enctype braucht es, damit die Fotos mitgeschickt werden -->
     <div class="col-lg-8 review-form">
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
-            <!-- 5 Kreise wie bei Tripadvisor -->
+            <!-- 5 Sterne: jeder Stern ist ein Radio-Button (1 bis 5), das JavaScript unten füllt sie -->
             <div class="mb-5">
                 <p class="fw-semibold mb-2">{{ form.rating.label }}</p>
-                <div class="rating-circles">
+                <div class="rating-stars" role="radiogroup" aria-label="Sterne">
                     {% for choice in form.rating %}
                         <input type="radio" class="btn-check" name="{{ choice.data.name }}"
                                id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
                                {% if choice.data.selected %}checked{% endif %}>
-                        <label for="{{ choice.id_for_label }}" title="{{ choice.choice_label }} von 5" aria-label="{{ choice.choice_label }} von 5"></label>
+                        <label for="{{ choice.id_for_label }}" title="{{ choice.choice_label }} von 5"
+                               aria-label="{{ choice.choice_label }} von 5">★</label>
                     {% endfor %}
                     <span class="rating-text ms-3 text-muted" id="ratingText"></span>
                 </div>
@@ -48,34 +49,32 @@
                 {{ form.visited }}
             </div>
 
-            <!-- Mit wem? -->
-            <div class="mb-5">
-                <p class="fw-semibold mb-2">{{ form.companions.label }}</p>
-                <div class="d-flex flex-wrap gap-2">
-                    {% for choice in form.companions %}
-                        <input type="radio" class="btn-check" name="{{ choice.data.name }}"
-                               id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
-                               {% if choice.data.selected %}checked{% endif %}>
-                        <label class="pill" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Text -->
-            <div class="mb-5">
-                <label for="{{ form.text.id_for_label }}" class="fw-semibold mb-2 d-block">{{ form.text.label }}</label>
-                {{ form.text }}
-                <div class="d-flex justify-content-between">
-                    <div>{% for error in form.text.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}</div>
-                    <small class="text-muted"><span id="charCount">0</span>/25 mind.</small>
-                </div>
-            </div>
-
-            <!-- Titel -->
+            <!-- Titel (vor dem Text) -->
             <div class="mb-5">
                 <label for="{{ form.title.id_for_label }}" class="fw-semibold mb-2 d-block">{{ form.title.label }}</label>
                 {{ form.title }}
                 {% for error in form.title.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+
+            <!-- Text -->
+            <div class="mb-5">
+                <label for="{{ form.text.id_for_label }}" class="fw-semibold mb-2 d-block">
+                    {{ form.text.label }} <span class="text-muted small fw-normal">(optional)</span>
+                </label>
+                {{ form.text }}
+                {% for error in form.text.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+
+            <!-- Fotos (freiwillig) -->
+            <div class="mb-5">
+                <label for="{{ form.photos.id_for_label }}" class="fw-semibold mb-2 d-block">
+                    {{ form.photos.label }} <span class="text-muted small fw-normal">(optional)</span>
+                </label>
+                {{ form.photos }}
+                <div class="form-text">Bis zu 10 Fotos, je höchstens 10 MB. Nur eigene Fotos hochladen.</div>
+                {% for error in form.photos.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                <!-- kleine Vorschau der ausgewählten Fotos -->
+                <div class="photo-preview mt-2" id="photoPreview"></div>
             </div>
 
             <!-- Bestätigen -->
@@ -101,25 +100,39 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    // Zeichen zählen
-    const text = document.getElementById("{{ form.text.id_for_label }}");
-    const counter = document.getElementById("charCount");
-    const count = () => counter.textContent = text.value.trim().length;
-    text.addEventListener("input", count);
-    count();
-
-    // Kreise bis zur gewählten Zahl füllen + Wort dazu
+    // Sterne bis zur gewählten Zahl füllen, beim Drüberfahren Vorschau zeigen
     const words = {1: "Schrecklich", 2: "Mangelhaft", 3: "Durchschnittlich", 4: "Sehr gut", 5: "Ausgezeichnet"};
-    const radios = document.querySelectorAll('.rating-circles input');
+    const radios = document.querySelectorAll(".rating-stars input");
     const ratingText = document.getElementById("ratingText");
-    function paint() {
-        const checked = document.querySelector('.rating-circles input:checked');
-        const value = checked ? Number(checked.value) : 0;
+
+    function paint(value) {
         radios.forEach(r => r.nextElementSibling.classList.toggle("filled", Number(r.value) <= value));
         ratingText.textContent = words[value] || "";
     }
-    radios.forEach(r => r.addEventListener("change", paint));
-    paint();
+    function selected() {
+        const checked = document.querySelector(".rating-stars input:checked");
+        return checked ? Number(checked.value) : 0;
+    }
+
+    radios.forEach(function (r) {
+        r.addEventListener("change", () => paint(selected()));
+        r.nextElementSibling.addEventListener("mouseenter", () => paint(Number(r.value)));
+        r.nextElementSibling.addEventListener("mouseleave", () => paint(selected()));
+    });
+    paint(selected());
+
+    // Vorschau der Fotos, bevor man abschickt
+    const photoInput = document.getElementById("{{ form.photos.id_for_label }}");
+    const preview = document.getElementById("photoPreview");
+    photoInput.addEventListener("change", function () {
+        preview.replaceChildren();
+        for (const file of photoInput.files) {
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            preview.appendChild(img);
+        }
+    });
 });
 </script>
 {% endblock %}

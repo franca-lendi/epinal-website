@@ -1,5 +1,6 @@
 {% extends "guide/base.html" %}
 {% load guide_extras %}
+{% load l10n %} <!-- unlocalize: Koordinaten mit Punkt statt Komma -->
 
 {% block title %}{{ activity.title }} – Épinal Guide{% endblock %}
 
@@ -8,7 +9,12 @@
 
     <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-arrow-left me-1"></i>Alle Aktivitäten</a>
 
-    {% if activity.status != 'published' %}
+    {% if activity.status == 'review' %}
+        <div class="alert alert-danger mt-3">
+            <strong>In Prüfung:</strong> Diese Aktivität wurde als unangemessen gemeldet und ist für andere ausgeblendet,
+            bis sie geprüft ist. Nur du siehst sie.
+        </div>
+    {% elif activity.status != 'published' %}
         <div class="alert alert-warning mt-3">
             Das ist ein Entwurf, nur du siehst ihn.
             <a href="{% url 'edit_activity' activity.pk %}" class="alert-link">Jetzt fertigstellen und veröffentlichen</a>
@@ -18,7 +24,7 @@
     <!-- Titel und Bewertung -->
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mt-3 mb-4">
         <div>
-            <span class="badge bg-success mb-2">{{ activity.category.name }}</span>
+            <span class="badge bg-success mb-2">{{ activity.category.label }}</span>
             <h1 class="detail-title">{{ activity.title }}</h1>
             <div class="d-flex align-items-center gap-2">
                 {% if activity.rating_count %}
@@ -80,30 +86,24 @@
 
             <!-- Weitere Fotos -->
             <section id="fotos" class="mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="h5 mb-0">Fotos{% if photos %} ({{ photos|length }}){% endif %}</h2>
-                    {% if activity.status == 'published' %}
-                        {% if user.is_authenticated %}
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#photoModal">
-                                <i class="bi bi-camera me-1"></i>Fotos hinzufügen
-                            </button>
-                        {% else %}
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">
-                                <i class="bi bi-camera me-1"></i>Fotos hinzufügen
-                            </button>
-                        {% endif %}
-                    {% endif %}
-                </div>
                 {% if photos %}
-                    <div class="photo-grid">
+                    <h2 class="h5 mb-3">Fotos ({{ photos|length }})</h2>
+                    <!-- grössere Vorschaubilder, Klick öffnet das Foto in voller Grösse -->
+                    <div class="photo-grid mb-3">
                         {% for photo in photos %}
                             <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
                                 <img src="{{ photo.image.url }}" alt="Foto von {{ activity.title }}" loading="lazy">
                             </a>
                         {% endfor %}
                     </div>
-                {% else %}
-                    <p class="text-muted small">Noch keine weiteren Fotos. Warst du dort? Lade deine Fotos hoch.</p>
+                {% endif %}
+
+                <!-- ein Knopf: Kamera + Fotos hinzufügen -->
+                {% if activity.status == 'published' %}
+                    <button type="button" class="btn btn-outline-primary photo-add-btn" data-bs-toggle="modal"
+                            data-bs-target="{% if user.is_authenticated %}#photoModal{% else %}#loginModal{% endif %}">
+                        <i class="bi bi-camera"></i> Fotos hinzufügen
+                    </button>
                 {% endif %}
             </section>
 
@@ -133,7 +133,6 @@
                         {% if review.text %}<p class="mb-1">{{ review.text|linebreaksbr }}</p>{% endif %}
                         <p class="text-muted small mb-0">
                             {% if review.visited_on %}Besucht im {{ review.visited_on|date:"F Y" }}{% endif %}
-                            {% if review.companions %} · {{ review.get_companions_display }}{% endif %}
                         </p>
                     </article>
                 {% empty %}
@@ -154,6 +153,18 @@
                     {% if activity.phone %}<li><i class="bi bi-telephone"></i><a href="tel:{{ activity.phone }}">{{ activity.phone }}</a></li>{% endif %}
                     {% if activity.email %}<li><i class="bi bi-envelope"></i><a href="mailto:{{ activity.email }}">{{ activity.email }}</a></li>{% endif %}
                 </ul>
+
+                {% if activity.location.latitude and activity.location.longitude %}
+                    <!-- NEU: kleine Karte mit dem Ort -->
+                    <div id="detailMap" class="detail-map"
+                         data-lat="{{ activity.location.latitude|unlocalize }}"
+                         data-lon="{{ activity.location.longitude|unlocalize }}"
+                         aria-label="Karte: {{ activity.location }}"></div>
+                    <a class="small d-inline-block mt-1" target="_blank" rel="noopener"
+                       href="https://www.openstreetmap.org/?mlat={{ activity.location.latitude|unlocalize }}&mlon={{ activity.location.longitude|unlocalize }}#map=17/{{ activity.location.latitude|unlocalize }}/{{ activity.location.longitude|unlocalize }}">
+                        Grosse Karte öffnen
+                    </a>
+                {% endif %}
 
                 {% if activity.opening_hours %}
                     <hr>
@@ -258,5 +269,31 @@
         </form>
     </div>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if activity.location.latitude and activity.location.longitude %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+// Kleine Karte mit einer Nadel beim Ort der Aktivität
+document.addEventListener("DOMContentLoaded", function () {
+    const box = document.getElementById("detailMap");
+    const point = [Number(box.dataset.lat), Number(box.dataset.lon)];
+    const map = L.map(box, { scrollWheelZoom: false }).setView(point, 16);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
+        // Django schickt das standardmässig nicht mit, deshalb hier nur für die Kartenbilder erlauben.
+        referrerPolicy: "strict-origin-when-cross-origin",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+    }).addTo(map);
+    // gleiche grüne Nadel wie in der Kartenansicht
+    const pin = L.divIcon({ className: "map-pin", html: '<i class="bi bi-geo-alt-fill"></i>',
+                            iconSize: [32, 32], iconAnchor: [16, 32] });
+    L.marker(point, { icon: pin }).addTo(map);
+});
+</script>
 {% endif %}
 {% endblock %}

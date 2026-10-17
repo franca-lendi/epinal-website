@@ -1,0 +1,60 @@
+{% extends "guide/base.html" %}
+
+{% block title %}Über mich bearbeiten – Épinal Guide{% endblock %}
+
+{% block content %}
+<div class="mx-auto" style="max-width: 720px;">
+
+    <h1 class="mb-1">Über mich bearbeiten</h1>
+    <p class="text-muted mb-4">Nur du als Admin siehst diese Seite. Kontaktdaten erscheinen auch auf der Kontaktseite.</p>
+
+    <!-- enctype braucht es für das Foto -->
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Foto mit Vorschau -->
+        <div class="mb-4 d-flex align-items-center gap-3">
+            {% if info.photo %}
+                <img src="{{ info.photo.url }}" alt="Aktuelles Foto" class="about-photo about-photo-sm" id="photoPreview">
+            {% else %}
+                <div class="about-photo about-photo-sm about-photo-empty" id="photoPreviewEmpty"><i class="bi bi-person"></i></div>
+                <img src="" alt="Vorschau" class="about-photo about-photo-sm d-none" id="photoPreview">
+            {% endif %}
+            <div class="flex-grow-1">
+                <label for="{{ form.photo.id_for_label }}" class="form-label fw-semibold">{{ form.photo.label }}</label>
+                {{ form.photo }}
+                {% for error in form.photo.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+
+        {% include "guide/_field.html" with field=form.name %}
+        {% include "guide/_field.html" with field=form.tagline %}
+        {% include "guide/_field.html" with field=form.intro %}
+        {% include "guide/_field.html" with field=form.text %}
+
+        <h2 class="h5 mt-4 mb-3">Kontakt</h2>
+        {% include "guide/_field.html" with field=form.email %}
+        {% include "guide/_field.html" with field=form.instagram %}
+        {% include "guide/_field.html" with field=form.other_link %}
+
+        <div class="d-flex align-items-center gap-3 mt-4">
+            <a href="{% url 'about' %}" class="link-dark">Abbrechen</a>
+            <button type="submit" class="btn btn-dark rounded-pill px-4">Speichern</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Neues Foto sofort als Vorschau zeigen
+document.getElementById("{{ form.photo.id_for_label }}").addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+    const preview = document.getElementById("photoPreview");
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove("d-none");
+    document.getElementById("photoPreviewEmpty")?.classList.add("d-none");
+});
+</script>
+{% endblock %}

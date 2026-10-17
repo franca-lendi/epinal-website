@@ -4,7 +4,34 @@
     --muted: #6b7280;
     --accent: #2f6b4f;
     --line: #e5e7eb;
+
+    /* Schriften */
+    --font-title: 'Fraunces', Georgia, serif;          /* Titel, Dicke 600 */
+    --font-text: 'Figtree', Arial, sans-serif;         /* Text 400, Knöpfe und Hervorhebungen 700 */
+    --bs-body-font-family: var(--font-text);           /* Bootstrap übernimmt Figtree für alles */
+    --bs-body-font-weight: 400;
 }
+
+/* ===================== Schriften ===================== */
+
+/* Titel: Fraunces, Dicke 600 */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.logo, .wizard-title, .wizard-section, .detail-title, .review-question,
+.about-name, .about-intro, .about-stat-number, .footer-brand, .footer-title {
+    font-family: var(--font-title);
+    font-weight: 600;
+}
+
+/* Knöpfe und Hervorhebungen: Figtree, Dicke 700 */
+button, .btn, .login-btn, .language-button, .main-nav a, .pill, .step,
+strong, b, .badge {
+    font-weight: 700;
+}
+.btn { --bs-btn-font-weight: 700; }
+
+/* Bootstrap-Klassen für fetten Text auch auf 700 (Bootstrap setzt sie mit !important) */
+.fw-semibold, .fw-bold, .fw-bolder { font-weight: 700 !important; }
 
 /* Obere Zeile */
 .top-bar {
@@ -15,7 +42,7 @@
     background: var(--bg);
 }
 .tagline { color: var(--muted); font-size: 0.95rem; margin: 0; }
-.logo { font-size: 1.8rem; font-weight: 700; color: var(--text); text-decoration: none; }
+.logo { font-size: 1.8rem; font-weight: 600; color: var(--text); text-decoration: none; }
 .top-links { display: flex; gap: 1.5rem; justify-content: flex-end; }
 .top-links a { color: var(--text); text-decoration: none; }
 
@@ -39,7 +66,7 @@
     padding: 1rem 0;
     color: var(--text);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 700;
     border-bottom: 2px solid transparent;
 }
 .main-nav a:hover { color: var(--accent); }
@@ -54,7 +81,7 @@
 .language-button {
     background: none;
     border: none;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
 }
 
@@ -99,7 +126,7 @@
     border-radius: 999px;
     padding: 0.4rem 0.9rem;
     color: var(--accent);
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
 }
 .login-btn:hover { background: var(--accent); color: #fff; }
@@ -137,8 +164,8 @@ main {
 }
 
 /* Status-Etiketten wie in Bild 5 */
-.badge-published { background: #e6f4ea; color: #1e7e34; font-weight: 500; }
-.badge-draft { background: #fff4e0; color: #b26a00; font-weight: 500; }
+.badge-published { background: #e6f4ea; color: #1e7e34; font-weight: 700; }
+.badge-draft { background: #fff4e0; color: #b26a00; font-weight: 700; }
 
 /* "..." Menü auf der Upload-Karte */
 .card-menu { position: absolute; top: 10px; right: 10px; z-index: 2; }
@@ -148,11 +175,11 @@ main {
 
 /* ---------- Hinzufügen (Tripadvisor-Stil) ---------- */
 .wizard { max-width: 640px; }
-.wizard-title { font-size: 2.6rem; font-weight: 800; color: #0b3d2c; margin-bottom: 1.5rem; }
-.wizard-section { font-size: 1.15rem; font-weight: 700; color: #0b3d2c; margin: 1.5rem 0 1rem; }
+.wizard-title { font-size: 2.6rem; font-weight: 600; color: #0b3d2c; margin-bottom: 1.5rem; }
+.wizard-section { font-size: 1.15rem; font-weight: 600; color: #0b3d2c; margin: 1.5rem 0 1rem; }
 
 .steps { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; }
-.step { display: flex; align-items: center; gap: 0.5rem; color: var(--text); font-weight: 500; text-decoration: none; }
+.step { display: flex; align-items: center; gap: 0.5rem; color: var(--text); font-weight: 700; text-decoration: none; }
 .step-number {
     display: inline-flex;
     align-items: center;
@@ -186,22 +213,33 @@ main {
 .time-field { width: 150px; }
 
 /* ---------- Detailseite ---------- */
-.detail-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.3rem; }
+.detail-title { font-size: 2.2rem; font-weight: 600; margin-bottom: 0.3rem; }
 .detail-hero { height: 380px; border-radius: 12px; overflow: hidden; background: #f1f3f5; }
 .detail-hero img { width: 100%; height: 100%; object-fit: cover; }
 .detail-text { white-space: normal; line-height: 1.6; }
 
-.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; }
-.photo-grid img { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+.photo-grid img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; }
+
+/* Knopf "Fotos hinzufügen": mittelgross, mit Kamera */
+.photo-add-btn { padding: 0.6rem 1.4rem; font-size: 1.05rem; }
+.photo-add-btn i { font-size: 1.3rem; margin-right: 0.4rem; vertical-align: -0.15rem; }
 
 .info-box { border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem; }
 .info-box li { display: flex; gap: 0.6rem; margin-bottom: 0.6rem; }
 .info-box li i { color: var(--accent); }
 
-.review { border-bottom: 1px solid var(--line); padding: 1rem 0; }
+/* jede Bewertung in einem eigenen Kästchen, Sterne etwas grösser */
+.review {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--bg);
+}
 
 /* ---------- Bewerten (Tripadvisor-Stil) ---------- */
-.review-question { font-size: 3rem; font-weight: 800; color: #0b3d2c; line-height: 1.1; }
+.review-question { font-size: 3rem; font-weight: 600; color: #0b3d2c; line-height: 1.1; }
 .review-target { max-width: 260px; }
 .review-target .card-img-top, .review-target .img-placeholder { height: 200px; object-fit: cover; }
 .review-form { border-left: 1px solid var(--line); }
@@ -235,7 +273,11 @@ main {
     position: static;
     width: auto;
     height: auto;
+    padding: 0.5rem 1rem;
+    border: 1px solid #dc3545;
     border-radius: 0.5rem;
+    background: #fff;
+    color: #dc3545;
     font-size: 1.1rem;
 }
 .fav-btn.fav-inline.is-favorite { background: #dc3545; color: #fff; }
@@ -243,3 +285,323 @@ main {
 /* Filter-Kästchen über den Karten schweben lassen statt die Seite zu verschieben */
 .filter-box { background: var(--bg); max-height: 320px; overflow-y: auto; }
 
+
+
+/* ===================== NEU: Sterne beim Bewerten ===================== */
+.rating-stars { display: flex; align-items: center; gap: 0.15rem; }
+.rating-stars label {
+    font-size: 2.6rem;
+    line-height: 1;
+    color: #d0d4d9;          /* leerer Stern: grau */
+    cursor: pointer;
+    transition: color 0.1s, transform 0.1s;
+}
+.rating-stars label.filled { color: #f5a623; }   /* gefüllter Stern: gelb */
+.rating-stars label:hover { transform: scale(1.1); }
+.rating-stars .btn-check:focus-visible + label { outline: 2px solid #0b3d2c; outline-offset: 2px; border-radius: 4px; }
+
+/* Vorschau der ausgewählten Fotos */
+.photo-preview { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.photo-preview img { width: 90px; height: 90px; object-fit: cover; border-radius: 8px; }
+
+
+/* ===================== NEU: "Füge hinzu"-Karte und Status "In Prüfung" ===================== */
+.add-card {
+    min-height: 320px;
+    border: 2px dashed #b8c2cc;
+    background: #f8f9fa;
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+}
+.add-card:hover { border-color: var(--accent); background: #eef6f1; }
+.add-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1.6rem;
+}
+
+.badge-review { background: #fde2e1; color: #b02a37; font-weight: 700; }
+
+.review .stars { font-size: 1.3rem; letter-spacing: 2px; }
+
+
+/* ===================== NEU: Über mich, Kontakt, Footer ===================== */
+.about { max-width: 1100px; margin: 0 auto; }
+.about-photo {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+.about-photo-sm { width: 72px; height: 72px; box-shadow: none; }
+.about-photo-empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef1f4;
+    color: #adb5bd;
+    font-size: 5rem;
+}
+.about-photo-sm.about-photo-empty { font-size: 2rem; }
+.about-name { font-size: 1.8rem; font-weight: 600; }
+.about-intro { font-size: 2rem; font-weight: 600; color: #0b3d2c; margin-bottom: 1rem; }
+.about-text { font-size: 1.1rem; line-height: 1.7; }
+.about-social { color: var(--text); }
+.about-social:hover { color: var(--accent); }
+
+.about-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    text-align: center;
+}
+.about-stat-number { font-size: 1.8rem; font-weight: 600; color: var(--accent); }
+.about-stat-label { font-size: 0.9rem; color: var(--muted); }
+
+.contact-list li { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; font-size: 1.05rem; }
+.contact-list i { color: var(--accent); font-size: 1.2rem; }
+.contact-box { border: 1px solid var(--line); border-radius: 12px; padding: 1.5rem; }
+
+/* Footer */
+.site-footer {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    padding-bottom: 1.5rem;
+    background: #0b3d2c;
+    color: #d6e4dc;
+}
+.footer-inner { max-width: 1400px; margin: 0 auto; }
+.footer-brand { font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; }
+.footer-text { max-width: 360px; }
+.footer-title { font-weight: 600; color: #fff; margin-bottom: 0.75rem; }
+.site-footer li { margin-bottom: 0.4rem; }
+.site-footer a { color: #d6e4dc; text-decoration: none; }
+.site-footer a:hover { color: #fff; text-decoration: underline; }
+.footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.9rem;
+}
+
+
+/* ===================== NEU: Adresse mit Vorschlägen und Karte ===================== */
+.address-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1100;            /* über der Karte */
+    max-height: 260px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.address-suggestions .list-group-item { cursor: pointer; }
+.address-map { height: 280px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
+
+/* kleine Karte auf der Detailseite */
+.detail-map { height: 200px; border-radius: 10px; margin-top: 0.75rem; z-index: 0; }
+
+
+/* ===================== NEU: Knöpfe und Felder einheitlich ===================== */
+/* Ziel: überall die gleichen Farben und die gleiche runde Form.
+   Statt jede Seite einzeln zu ändern, stellen wir die Bootstrap-Farben auf unsere Farben um.
+   - grün (--accent):        Hauptknöpfe (btn-primary), z.B. Suchen, Anwenden, Speichern
+   - dunkelgrün (--accent-dark): btn-dark und aktive Filter
+   - Umriss:                 Nebenknöpfe (btn-outline-...)
+   - rot bleibt nur für Löschen, Melden und das Herz */
+:root {
+    --accent-dark: #0b3d2c;
+    --bs-primary: #2f6b4f;
+    --bs-primary-rgb: 47, 107, 79;
+    --bs-link-color: #2f6b4f;
+    --bs-link-color-rgb: 47, 107, 79;
+    --bs-link-hover-color: #0b3d2c;
+    --bs-link-hover-color-rgb: 11, 61, 44;
+}
+
+/* alle Knöpfe rund wie "Login" */
+.btn,
+.input-group-lg > .btn,
+.btn-group-sm > .btn,
+.btn-group-lg > .btn,
+.btn-lg,
+.btn-sm {
+    --bs-btn-border-radius: 999px;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--accent);
+    --bs-btn-border-color: var(--accent);
+    --bs-btn-hover-bg: var(--accent-dark);
+    --bs-btn-hover-border-color: var(--accent-dark);
+    --bs-btn-active-bg: var(--accent-dark);
+    --bs-btn-active-border-color: var(--accent-dark);
+    --bs-btn-disabled-bg: var(--accent);
+    --bs-btn-disabled-border-color: var(--accent);
+    --bs-btn-focus-shadow-rgb: 47, 107, 79;
+}
+.btn-dark {
+    --bs-btn-bg: var(--accent-dark);
+    --bs-btn-border-color: var(--accent-dark);
+    --bs-btn-hover-bg: var(--accent);
+    --bs-btn-hover-border-color: var(--accent);
+    --bs-btn-active-bg: var(--accent);
+    --bs-btn-active-border-color: var(--accent);
+    --bs-btn-focus-shadow-rgb: 11, 61, 44;
+}
+.btn-outline-primary,
+.btn-outline-dark {
+    --bs-btn-color: var(--accent);
+    --bs-btn-border-color: var(--accent);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--accent);
+    --bs-btn-hover-border-color: var(--accent);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--accent-dark);
+    --bs-btn-active-border-color: var(--accent-dark);
+    --bs-btn-focus-shadow-rgb: 47, 107, 79;
+}
+/* Filter- und Nebenknöpfe: ruhiger grauer Rand, Schrift dunkel */
+.btn-outline-secondary {
+    --bs-btn-color: var(--text);
+    --bs-btn-border-color: #c9ced4;
+    --bs-btn-hover-color: var(--text);
+    --bs-btn-hover-bg: #f1f3f5;
+    --bs-btn-hover-border-color: #adb5bd;
+    --bs-btn-active-color: var(--text);
+    --bs-btn-active-bg: #e9ecef;
+    --bs-btn-active-border-color: #adb5bd;
+    --bs-btn-disabled-color: #adb5bd;
+    --bs-btn-disabled-border-color: #e5e7eb;
+}
+
+/* Suchleiste: links und rechts rund, damit sie zu den Knöpfen passt */
+.search-bar .input-group-text {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+    padding-left: 1.25rem;
+}
+
+/* Eingabefelder, Häkchen und Schieberegler in Grün statt Blau */
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.2rem rgba(47, 107, 79, 0.2);
+}
+.form-check-input:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+.form-range::-webkit-slider-thumb { background-color: var(--accent); }
+.form-range::-moz-range-thumb { background-color: var(--accent); }
+
+/* Pfeil in den Filterknöpfen */
+.filter-btn .bi-chevron-down { font-size: 0.8rem; margin-left: 0.3rem; }
+
+
+/* ===================== NEU: Ansichten Kacheln / Tabelle / Karte ===================== */
+/* Grosse Karte mit allen Aktivitäten */
+.activities-map {
+    height: 560px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    z-index: 0;               /* bleibt unter der klebenden Navigation */
+}
+@media (max-width: 991px) {
+    .activities-map { height: 360px; }   /* Handy: Karte oben, Liste darunter */
+}
+
+/* grüne Nadel auf der Karte */
+.map-pin { background: none; border: none; }
+.map-pin i {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--accent);
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+.map-popup-title { display: block; font-weight: 700; margin-bottom: 0.15rem; }
+
+/* Herz in der Tabelle: normal in der Zeile statt oben rechts auf dem Bild */
+.fav-cell .fav-btn {
+    position: static;
+    width: 34px;
+    height: 34px;
+    background: none;
+    font-size: 1.2rem;
+}
+.activity-table td a { color: var(--text); }
+.activity-table td a:hover { color: var(--accent); }
+
+/* Liste neben der Karte */
+.map-list {
+    position: relative;       /* damit das Scrollen zum markierten Eintrag stimmt */
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+@media (min-width: 992px) {
+    .map-list { height: 560px; overflow-y: auto; padding-right: 0.35rem; }  /* gleich hoch wie die Karte */
+}
+.map-list-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.map-list-item:hover,
+.map-list-item.active {
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+.map-list-img { flex: 0 0 84px; height: 84px; border-radius: 8px; overflow: hidden; }
+.map-list-img img,
+.map-list-img .img-placeholder { width: 100%; height: 100%; object-fit: cover; font-size: 1.5rem; }
+.map-list-body {
+    flex: 1;
+    min-width: 0;             /* damit lange Titel mit … abgeschnitten werden */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+}
+.map-list-title {
+    max-width: 100%;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.map-list-fav { position: relative; z-index: 2; align-self: flex-start; }  /* über dem klickbaren Eintrag */
+.map-list-fav .fav-btn { position: static; width: 34px; height: 34px; font-size: 1.2rem; background: none; }
+
+/* Nadel, deren Eintrag gerade unter der Maus ist */
+.map-pin.is-active i { color: var(--accent-dark); transform: scale(1.25); transform-origin: bottom center; }
+
+
+/* ===================== NEU: Unterkategorien im Filter ===================== */
+.cat-sub-row { margin-left: 1.5rem; }
+.filter-box .cat-main { margin-top: 0.35rem; }

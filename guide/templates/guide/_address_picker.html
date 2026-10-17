@@ -1,0 +1,208 @@
+{% comment %}
+Adresse suchen + Karte. Wird in add_activity.html eingebunden.
+
+   So funktioniert es:
+   1. Beim Tippen fragt JavaScript den offiziellen Adressdienst Frankreichs (Géoplateforme, IGN) nach Vorschlägen.
+   2. Wählt man einen Vorschlag, werden Strasse, PLZ, Ort und die Koordinaten (Breiten- und Längengrad) ausgefüllt.
+   3. Die Karte (Leaflet + OpenStreetMap) zeigt den Ort mit einer Nadel. Die Nadel kann man verschieben
+      oder irgendwo auf die Karte klicken, z.B. für einen Park ohne Hausnummer.
+   Die Koordinaten landen in versteckten Feldern und werden mit dem Formular gespeichert.
+(Mehrzeilige Kommentare gehen in Django nur mit comment, {# #} nur auf einer Zeile.)
+{% endcomment %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+
+<div class="mb-3 address-picker">
+    <label for="{{ form.address.id_for_label }}" class="form-label">Adresse</label>
+    <div class="position-relative">
+        <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-geo-alt"></i></span>
+            <input type="text" name="{{ form.address.html_name }}" id="{{ form.address.id_for_label }}"
+                   value="{{ form.address.value|default_if_none:'' }}" class="form-control"
+                   placeholder="z.B. 2 Faubourg de Poissompré" autocomplete="off"
+                   role="combobox" aria-expanded="false" aria-controls="addressSuggestions" aria-autocomplete="list">
+        </div>
+        <!-- Vorschläge erscheinen hier -->
+        <ul class="list-group address-suggestions d-none" id="addressSuggestions" role="listbox"></ul>
+    </div>
+    <div class="form-text" id="addressHint">Tippe die Adresse und wähle einen Vorschlag. Oder klicke auf die Karte.</div>
+    {% for error in form.address.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+
+    <div class="row g-2 mt-1">
+        <div class="col-4">
+            <label for="{{ form.postal_code.id_for_label }}" class="form-label small text-muted mb-1">PLZ</label>
+            <input type="text" name="{{ form.postal_code.html_name }}" id="{{ form.postal_code.id_for_label }}"
+                   value="{{ form.postal_code.value|default_if_none:'' }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-8">
+            <label for="{{ form.city.id_for_label }}" class="form-label small text-muted mb-1">Ort</label>
+            <input type="text" name="{{ form.city.html_name }}" id="{{ form.city.id_for_label }}"
+                   value="{{ form.city.value|default_if_none:'' }}" class="form-control form-control-sm" required>
+        </div>
+    </div>
+
+    <!-- Karte -->
+    <div id="addressMap" class="address-map mt-3" aria-label="Karte zum Auswählen des Ortes"></div>
+    <div class="small text-muted mt-1" id="mapStatus">Noch kein Ort gewählt.</div>
+
+    <!-- versteckte Felder für die Koordinaten -->
+    {{ form.latitude }}
+    {{ form.longitude }}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Adressdienst der Géoplateforme (IGN), kostenlos, ohne Schlüssel, max. 50 Anfragen pro Sekunde
+    const API = "https://data.geopf.fr/geocodage";
+    const EPINAL = [48.1724, 6.4496];  // Zentrum von Épinal (Breite, Länge)
+
+    const input = document.getElementById("{{ form.address.id_for_label }}");
+    const list = document.getElementById("addressSuggestions");
+    const postal = document.getElementById("{{ form.postal_code.id_for_label }}");
+    const city = document.getElementById("{{ form.city.id_for_label }}");
+    const lat = document.getElementById("{{ form.latitude.id_for_label }}");
+    const lon = document.getElementById("{{ form.longitude.id_for_label }}");
+    const hint = document.getElementById("addressHint");
+    const status = document.getElementById("mapStatus");
+
+    // ---------- Karte ----------
+    const map = L.map("addressMap").setView(EPINAL, 13);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
+        // Django schickt das standardmässig nicht mit, deshalb hier nur für die Kartenbilder erlauben.
+        referrerPolicy: "strict-origin-when-cross-origin",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+    }).addTo(map);
+
+    let marker = null;
+
+    function setPoint(latitude, longitude, zoom) {
+        // Koordinaten auf 7 Stellen runden (so viele speichert die Datenbank)
+        lat.value = Number(latitude).toFixed(7);
+        lon.value = Number(longitude).toFixed(7);
+        if (!marker) {
+            marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+            marker.on("dragend", function () {
+                const p = marker.getLatLng();
+                setPoint(p.lat, p.lng);
+                reverseGeocode(p.lat, p.lng);
+            });
+        } else {
+            marker.setLatLng([latitude, longitude]);
+        }
+        map.setView([latitude, longitude], zoom || map.getZoom());
+        status.textContent = "Ort gewählt. Du kannst die Nadel verschieben, falls sie nicht ganz stimmt.";
+    }
+
+    // Beim Bearbeiten: gespeicherten Ort zeigen
+    if (lat.value && lon.value) {
+        setPoint(lat.value.replace(",", "."), lon.value.replace(",", "."), 17);
+    }
+
+    // Klick auf die Karte = Ort setzen (z.B. für einen Park)
+    map.on("click", function (e) {
+        setPoint(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Koordinaten -> nächste Adresse (füllt die Felder, wenn eine gefunden wird)
+    async function reverseGeocode(latitude, longitude) {
+        try {
+            const url = `${API}/reverse?lon=${longitude}&lat=${latitude}&index=address&limit=1`;
+            const data = await (await fetch(url)).json();
+            const p = data.features?.[0]?.properties;
+            if (p) {
+                input.value = p.name || input.value;
+                postal.value = p.postcode || postal.value;
+                city.value = p.city || city.value;
+            }
+        } catch (err) {
+            // Ohne Internet: Koordinaten sind trotzdem gesetzt, Adresse kann man von Hand eintippen
+        }
+    }
+
+    // ---------- Vorschläge beim Tippen ----------
+    let results = [];
+    let active = -1;
+    let timer = null;
+
+    function closeList() {
+        list.classList.add("d-none");
+        input.setAttribute("aria-expanded", "false");
+        active = -1;
+    }
+
+    function showResults() {
+        list.replaceChildren();
+        results.forEach(function (feature, i) {
+            const li = document.createElement("li");
+            li.className = "list-group-item list-group-item-action" + (i === active ? " active" : "");
+            li.setAttribute("role", "option");
+            li.textContent = feature.properties.label;  // z.B. "2 Faubourg de Poissompré 88000 Épinal"
+            li.addEventListener("mousedown", function (e) {
+                e.preventDefault();  // sonst verliert das Feld zuerst den Fokus
+                choose(i);
+            });
+            list.appendChild(li);
+        });
+        list.classList.toggle("d-none", results.length === 0);
+        input.setAttribute("aria-expanded", results.length > 0 ? "true" : "false");
+    }
+
+    function choose(i) {
+        const feature = results[i];
+        const p = feature.properties;
+        const [longitude, latitude] = feature.geometry.coordinates;  // Achtung: zuerst Länge, dann Breite
+        input.value = p.name;
+        postal.value = p.postcode || "";
+        city.value = p.city || "";
+        setPoint(latitude, longitude, 17);
+        closeList();
+    }
+
+    async function search(text) {
+        try {
+            // lat/lon = Vorschläge in der Nähe von Épinal zuerst
+            const url = `${API}/search?q=${encodeURIComponent(text)}&index=address&limit=5&autocomplete=1`
+                      + `&lat=${EPINAL[0]}&lon=${EPINAL[1]}`;
+            const data = await (await fetch(url)).json();
+            results = data.features || [];
+            active = -1;
+            showResults();
+            hint.textContent = results.length ? "Wähle einen Vorschlag." : "Keine Adresse gefunden. Du kannst auch auf die Karte klicken.";
+        } catch (err) {
+            hint.textContent = "Adresssuche gerade nicht erreichbar. Tippe die Adresse von Hand und klicke den Ort auf der Karte an.";
+        }
+    }
+
+    input.addEventListener("input", function () {
+        // Wer die Adresse ändert, muss den Ort neu bestätigen
+        lat.value = "";
+        lon.value = "";
+        status.textContent = "Wähle einen Vorschlag oder klicke auf die Karte.";
+        clearTimeout(timer);
+        const text = input.value.trim();
+        if (text.length < 3) {
+            closeList();
+            return;
+        }
+        // kurz warten, bis man fertig getippt hat (nicht bei jedem Buchstaben anfragen)
+        timer = setTimeout(() => search(text), 250);
+    });
+
+    // Tastatur: Pfeile, Enter, Escape
+    input.addEventListener("keydown", function (e) {
+        if (list.classList.contains("d-none")) return;
+        if (e.key === "ArrowDown") { active = Math.min(active + 1, results.length - 1); showResults(); e.preventDefault(); }
+        else if (e.key === "ArrowUp") { active = Math.max(active - 1, 0); showResults(); e.preventDefault(); }
+        else if (e.key === "Enter") { e.preventDefault(); choose(active >= 0 ? active : 0); }
+        else if (e.key === "Escape") { closeList(); }
+    });
+    input.addEventListener("blur", () => setTimeout(closeList, 150));
+
+    // Die Karte braucht die richtige Grösse, wenn man von Schritt 2 zurückkommt
+    document.getElementById("toStep1")?.addEventListener("click", () => setTimeout(() => map.invalidateSize(), 50));
+});
+</script>

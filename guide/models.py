@@ -4,28 +4,48 @@ from django.contrib.auth.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    # NEU: eigene Reihenfolge im Filter und im Formular (1 = ganz oben), im Admin änderbar
+    position = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    # NEU: Unterkategorien, z.B. Sport & Bewegung -> Fussball. Hauptkategorien haben kein parent.
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT,
+                               related_name="children", verbose_name="Hauptkategorie")
+    # NEU: Vorschläge von Nutzer:innen ("Andere" + eigene Sportart) erscheinen erst nach der Freigabe im Filter
+    approved = models.BooleanField("freigegeben", default=True)
 
     class Meta:
         verbose_name_plural = "categories"
+        ordering = ["position", "name"]
 
     def __str__(self):
+        # im Admin: "Sport & Bewegung › Fussball"
+        return f"{self.parent.name} › {self.name}" if self.parent_id else self.name
+
+    @property
+    def label(self):
+        # auf der Website: die Unterkategorie, bei "Andere" aber die Hauptkategorie
+        if self.parent_id and self.name == "Andere":
+            return self.parent.name
         return self.name
 
 
 class Location(models.Model):
     address = models.CharField(max_length=255, blank=True)
+    postal_code = models.CharField(max_length=10, blank=True)  # NEU (steht so im ERM)
     city = models.CharField(max_length=100, default="Épinal")
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.address}, {self.city}" if self.address else self.city
+        # z.B. "2 Faubourg de Poissompré, 88000 Épinal"
+        place = f"{self.postal_code} {self.city}".strip()
+        return f"{self.address}, {place}" if self.address else place
 
 
 class Activity(models.Model):
     STATUS_CHOICES = [
         ("published", "Veröffentlicht"),
         ("draft", "Entwurf"),
+        ("review", "In Prüfung"),  # NEU: als unangemessen gemeldet, ausgeblendet bis Admin prüft
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activities")
@@ -66,22 +86,13 @@ class ActivityImage(models.Model):
 
 # NEU: Bewertung (Sterne, Titel, Text)
 class Rating(models.Model):
-    COMPANION_CHOICES = [
-        ("business", "Geschäftlich"),
-        ("couple", "Als Paar"),
-        ("family", "Familie"),
-        ("friends", "Mit Freunden"),
-        ("solo", "Alleine"),
-    ]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="ratings")
     rating = models.PositiveSmallIntegerField()  # 1 bis 5
     title = models.CharField(max_length=150, blank=True)
     text = models.TextField(blank=True)
-    # NEU (wie bei Tripadvisor): wann und mit wem
+    # NEU (wie bei Tripadvisor): wann war man dort
     visited_on = models.DateField(null=True, blank=True)  # nur Monat und Jahr zählen
-    companions = models.CharField(max_length=20, choices=COMPANION_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -112,4 +123,80 @@ class Favorite(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user", "activity")
+        unique_together = ("user", "activity")
+
+# NEU: Inhalt von "Über mich" und "Kontakt" (gibt es nur einmal, Zeile mit id=1)
+class SiteInfo(models.Model):
+    name = models.CharField("Name", max_length=100, blank=True)
+    tagline = models.CharField("Zeile unter dem Namen", max_length=150, blank=True,
+                               default="Hat den Épinal Guide gebaut · Maturaarbeit 2026")
+    photo = models.ImageField("Foto", upload_to="about/", null=True, blank=True)
+    intro = models.CharField("Begrüssung", max_length=200, blank=True,
+                             default="Hallo! Schön, dass du hier bist.")
+    text = models.TextField("Text über mich", blank=True, default=(
+        "Letzten Herbst war ich vier Wochen im Austausch in Épinal. Wie immer, wenn ich in eine neue Stadt komme, "
+        "habe ich mich gefragt: Was kann man hier eigentlich unternehmen? Die Infos waren überall verstreut, "
+        "oft nur auf Französisch, und die besten Tipps kannte man nur, wenn man jemanden gefragt hat.\n\n"
+        "Daraus ist die Idee für diese Website entstanden. Hier sammle ich Aktivitäten, Orte und Tipps für Épinal, "
+        "die man nach Kategorie, Preis und Datum filtern kann. Wer selbst einen guten Ort kennt, kann ihn hochladen "
+        "und andere Orte bewerten.\n\n"
+        "Programmiert habe ich alles selbst mit Python und Django, im Rahmen meiner Maturaarbeit."
+    ))
+    email = models.EmailField("E-Mail", blank=True)
+    instagram = models.CharField("Instagram (ohne @)", max_length=60, blank=True)
+    other_link = models.URLField("Weiterer Link (z.B. GitHub)", blank=True)
+
+    class Meta:
+        verbose_name = "Über mich / Kontakt"
+        verbose_name_plural = "Über mich / Kontakt"
+
+    def __str__(self):
+        return "Über mich / Kontakt"
+
+    @classmethod
+    def load(cls):
+        # Gibt immer dieselbe Zeile zurück und legt sie beim ersten Mal an
+        info, _ = cls.objects.get_or_create(pk=1)
+        return info
+
+
+# NEU: Nachrichten aus dem Kontaktformular (im Admin lesbar)
+class ContactMessage(models.Model):
+    TOPIC_CHOICES = [
+        ("question", "Frage"),
+        ("tip", "Tipp für eine Aktivität"),
+        ("problem", "Problem mit der Website melden"),
+        ("other", "Anderes"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    topic = models.CharField(max_length=20, choices=TOPIC_CHOICES, default="question")
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_topic_display()} von {self.name}"
+
+
+# NEU: Besucherzähler insgesamt (nur Zahlen, keine Namen oder IP-Adressen)
+class VisitCounter(models.Model):
+    visitors = models.PositiveIntegerField(default=0)    # wie viele verschiedene Personen insgesamt
+    page_views = models.PositiveIntegerField(default=0)  # wie viele Seiten insgesamt aufgerufen
+
+    class Meta:
+        verbose_name = "Besucherzähler"
+        verbose_name_plural = "Besucherzähler"
+
+    def __str__(self):
+        return f"{self.visitors} Besucher:innen, {self.page_views} Seitenaufrufe"
+
+    @classmethod
+    def load(cls):
+        counter, _ = cls.objects.get_or_create(pk=1)
+        return counter

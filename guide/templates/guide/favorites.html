@@ -4,21 +4,36 @@
 
 {% block content %}
 
-<h1>Favoriten</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <h1>Favoriten</h1>
+        <p class="text-muted mb-0">Hier findest du deine gespeicherten Aktivitäten.</p>
+    </div>
+    {% if activities %}{% include "guide/_view_switch.html" %}{% endif %}
+</div>
 
-<p class="text-muted">Hier findest du deine gespeicherten Aktivitäten.</p>
-
-<!-- data-favorites-page: auf dieser Seite verschwindet eine Karte, wenn man das Herz entfernt -->
-<div class="row g-4 mt-2" data-favorites-page>
-    {% for activity in activities %}
-        {% include "guide/_activity_card.html" %}
-    {% empty %}
+<!-- data-favorites-page: auf dieser Seite verschwindet eine Karte oder Zeile, wenn man das Herz entfernt -->
+<div data-favorites-page>
+    {% if not activities %}
         <div class="text-center text-muted py-5">
             <div class="display-4 mb-3">♡</div>
             <p>Du hast noch keine Favoriten. Tippe bei einer Aktivität auf das Herz, um sie hier zu speichern.</p>
             <a href="{% url 'activities' %}" class="btn btn-outline-primary">Aktivitäten entdecken</a>
         </div>
-    {% endfor %}
+
+    {% elif view == "table" %}
+        {% include "guide/_activity_table.html" %}
+
+    {% elif view == "map" %}
+        {% include "guide/_activity_map.html" with map_list=activities %}
+
+    {% else %}
+        <div class="row g-4">
+            {% for activity in activities %}
+                {% include "guide/_activity_card.html" %}
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 {% endblock %}

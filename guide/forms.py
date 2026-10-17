@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Activity, Rating, Report
+from .models import Activity, Category, ContactMessage, Report, SiteInfo
 
 
 class RegisterForm(UserCreationForm):
@@ -19,6 +19,13 @@ class RegisterForm(UserCreationForm):
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
 
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        # Kein @ im Benutzernamen, sonst könnte man ihn beim Login mit einer E-Mail verwechseln
+        if "@" in username:
+            raise forms.ValidationError("Der Benutzername darf kein @ enthalten.")
+        return username
+
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email__iexact=email).exists():
@@ -27,9 +34,20 @@ class RegisterForm(UserCreationForm):
 
 
 class ActivityForm(forms.ModelForm):
-    # Diese zwei Felder gehören zur Location, nicht zur Activity
-    address = forms.CharField(label="Adresse", max_length=255)
+    # Diese Felder gehören zur Location, nicht zur Activity.
+    # Die Adresssuche (JavaScript in add_activity.html) füllt sie automatisch aus.
+    address = forms.CharField(label="Adresse", max_length=255, required=False)
+    postal_code = forms.CharField(label="PLZ", max_length=10, required=False)
     city = forms.CharField(label="Ort", max_length=100, initial="Épinal")
+    latitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
+    longitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
+
+    # NEU: eigener Vorschlag, wenn bei der Kategorie "Andere" gewählt ist (z.B. eine Sportart, die fehlt)
+    new_category = forms.CharField(
+        label="Was genau?", max_length=60, required=False,
+        help_text="Wir schauen deinen Vorschlag an und nehmen ihn dann in die Liste auf.",
+        widget=forms.TextInput(attrs={"placeholder": "z.B. Rudern, Klettersteig …"}),
+    )
 
     # Welche Felder zu Schritt 2 gehören (für die Fehleranzeige)
     STEP2_FIELDS = {"website", "phone", "email", "opening_hours"}
@@ -71,8 +89,91 @@ class ActivityForm(forms.ModelForm):
         for field in self.fields.values():
             css = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
             field.widget.attrs["class"] = css
-        self.fields["category"].empty_label = "Kategorie wählen"
+        self.setup_categories()
         self.fields["price"].initial = 0
+
+    def setup_categories(self):
+        # Kategorie-Auswahl mit Gruppen: pro Hauptkategorie eine Gruppe mit ihren Unterkategorien.
+        # Hauptkategorien ohne Unterkategorien (z.B. Natur & Parks) wählt man direkt.
+        field = self.fields["category"]
+        current = self.instance.category if self.instance.category_id else None
+        all_categories = list(Category.objects.order_by("position", "name"))
+
+        choices = [("", "Kategorie wählen")]
+        allowed = []
+        for main in [c for c in all_categories if c.parent_id is None]:
+            # Vorschläge (noch nicht freigegeben) nur zeigen, wenn diese Aktivität schon so eine hat
+            subs = [c for c in all_categories if c.parent_id == main.pk and (c.approved or c == current)]
+            if subs:
+                choices.append((main.name, [(c.pk, c.name if c.approved else f"{c.name} (Vorschlag)") for c in subs]))
+                allowed += [c.pk for c in subs]
+            else:
+                choices.append((main.pk, main.name))
+                allowed.append(main.pk)
+
+        # ältere Aktivität, die noch direkt in einer Hauptkategorie mit Unterkategorien ist: behalten können
+        if current and current.pk not in allowed:
+            choices.insert(1, (current.pk, current.name))
+            allowed.append(current.pk)
+
+        field.queryset = Category.objects.filter(pk__in=allowed)  # nur diese sind gültig
+        field.choices = choices                                    # so werden sie angezeigt
+
+    def clean(self):
+        cleaned = super().clean()
+        # Ohne Koordinaten gehen Distanzfilter und Karte nicht, deshalb Pflicht
+        if cleaned.get("latitude") is None or cleaned.get("longitude") is None:
+            self.add_error("address", "Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte.")
+        # Vorschlag nur verwenden, wenn wirklich "Andere" gewählt ist
+        category = cleaned.get("category")
+        if not (category and category.name == "Andere"):
+            cleaned["new_category"] = ""
+        return cleaned
+
+
+# ---------- NEU: Fotos hinzufügen (mehrere auf einmal) ----------
+
+MAX_PHOTOS = 10
+MAX_PHOTO_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    # So erlaubt Django mehrere Dateien in einem Feld (Beispiel aus der Django-Doku)
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput(attrs={"class": "form-control", "accept": "image/*"}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_clean = super().clean
+        if not data:  # keine Datei ausgewählt
+            if self.required:
+                raise forms.ValidationError(self.error_messages["required"], code="required")
+            return []
+        if isinstance(data, (list, tuple)):
+            return [single_clean(d, initial) for d in data]
+        return [single_clean(data, initial)]
+
+
+def check_photos(photos):
+    # Gemeinsame Prüfung für "Fotos hinzufügen" und "Bewerten"
+    if len(photos) > MAX_PHOTOS:
+        raise forms.ValidationError(f"Höchstens {MAX_PHOTOS} Fotos auf einmal.")
+    for photo in photos:
+        if photo.size > MAX_PHOTO_SIZE:
+            raise forms.ValidationError(f"{photo.name} ist grösser als 10 MB.")
+    return photos
+
+
+class PhotoForm(forms.Form):
+    photos = MultipleImageField(label="Fotos auswählen")
+
+    def clean_photos(self):
+        return check_photos(self.cleaned_data["photos"])
+
 
 
 # ---------- NEU: Bewerten (wie bei Tripadvisor) ----------
@@ -95,33 +196,28 @@ def last_12_months():
 
 
 class ReviewForm(forms.Form):
+    # Reihenfolge hier = Reihenfolge im Formular
     rating = forms.TypedChoiceField(
         label="Wie würdest du deine Erfahrung bewerten?",
         choices=[(i, i) for i in range(1, 6)],
         coerce=int,
         widget=forms.RadioSelect,
-        error_messages={"required": "Bitte wähle 1 bis 5 Punkte."},
+        error_messages={"required": "Bitte wähle 1 bis 5 Sterne."},
     )
     visited = forms.ChoiceField(label="Wann warst du dort?")
-    companions = forms.ChoiceField(
-        label="Mit wem warst du dort?",
-        choices=Rating.COMPANION_CHOICES,
-        widget=forms.RadioSelect,
-        required=False,
-    )
-    text = forms.CharField(
-        label="Schreib deine Bewertung",
-        min_length=25,
-        widget=forms.Textarea(attrs={"rows": 5, "class": "form-control",
-                                     "placeholder": "Teile deine Erfahrung ..."}),
-        error_messages={"min_length": "Bitte schreib mindestens 25 Zeichen."},
-    )
     title = forms.CharField(
         label="Titel deiner Bewertung",
         max_length=150,
         widget=forms.TextInput(attrs={"class": "form-control",
                                       "placeholder": "Wie würdest du deine Erfahrung zusammenfassen?"}),
     )
+    text = forms.CharField(
+        label="Schreib deine Bewertung",
+        required=False,  # freiwillig: Sterne und Titel reichen
+        widget=forms.Textarea(attrs={"rows": 5, "class": "form-control",
+                                     "placeholder": "Teile deine Erfahrung ..."}),
+    )
+    photos = MultipleImageField(label="Fotos hinzufügen", required=False)  # freiwillig
     confirm = forms.BooleanField(
         label="Ich bestätige, dass diese Bewertung auf meiner eigenen Erfahrung beruht und ehrlich ist.",
         error_messages={"required": "Bitte bestätige das Kästchen."},
@@ -132,45 +228,12 @@ class ReviewForm(forms.Form):
         self.fields["visited"].choices = last_12_months()
         self.fields["visited"].widget.attrs["class"] = "form-select w-auto"
 
+    def clean_photos(self):
+        return check_photos(self.cleaned_data["photos"])
+
     def visited_date(self):
         year, month = self.cleaned_data["visited"].split("-")
         return datetime.date(int(year), int(month), 1)
-
-
-# ---------- NEU: Fotos hinzufügen (mehrere auf einmal) ----------
-
-class MultipleFileInput(forms.ClearableFileInput):
-    allow_multiple_selected = True
-
-
-class MultipleImageField(forms.ImageField):
-    # So erlaubt Django mehrere Dateien in einem Feld (Beispiel aus der Django-Doku)
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={"class": "form-control", "accept": "image/*"}))
-        super().__init__(*args, **kwargs)
-
-    def clean(self, data, initial=None):
-        single_clean = super().clean
-        if isinstance(data, (list, tuple)):
-            return [single_clean(d, initial) for d in data]
-        return [single_clean(data, initial)]
-
-
-MAX_PHOTOS = 10
-MAX_PHOTO_SIZE = 10 * 1024 * 1024  # 10 MB
-
-
-class PhotoForm(forms.Form):
-    photos = MultipleImageField(label="Fotos auswählen")
-
-    def clean_photos(self):
-        photos = self.cleaned_data["photos"]
-        if len(photos) > MAX_PHOTOS:
-            raise forms.ValidationError(f"Höchstens {MAX_PHOTOS} Fotos auf einmal.")
-        for photo in photos:
-            if photo.size > MAX_PHOTO_SIZE:
-                raise forms.ValidationError(f"{photo.name} ist grösser als 10 MB.")
-        return photos
 
 
 # ---------- NEU: Melden und Fehler melden ----------
@@ -209,4 +272,56 @@ class ReportForm(forms.ModelForm):
         if self.kind == "error":
             self.instance.reason = "error"
         return super().save(commit)
+
+
+# ---------- NEU: Über mich bearbeiten (nur Admin) ----------
+
+class SiteInfoForm(forms.ModelForm):
+    class Meta:
+        model = SiteInfo
+        fields = ["photo", "name", "tagline", "intro", "text", "email", "instagram", "other_link"]
+        widgets = {
+            "photo": forms.FileInput(attrs={"accept": "image/*"}),
+            "text": forms.Textarea(attrs={"rows": 10}),
+        }
+        help_texts = {
+            "text": "Leere Zeile = neuer Absatz.",
+            "email": "Erscheint auf der Kontaktseite. Leer lassen, wenn du sie nicht zeigen willst.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "form-control")
+
+
+# ---------- NEU: Kontaktformular ----------
+
+class ContactForm(forms.ModelForm):
+    # Unsichtbares Feld gegen Spam-Roboter: Menschen sehen es nicht, Roboter füllen es aus
+    website = forms.CharField(required=False, widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off"}))
+
+    class Meta:
+        model = ContactMessage
+        fields = ["name", "email", "topic", "message"]
+        labels = {
+            "name": "Dein Name",
+            "email": "Deine E-Mail",
+            "topic": "Worum geht es?",
+            "message": "Nachricht",
+        }
+        widgets = {
+            "message": forms.Textarea(attrs={"rows": 6}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            css = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
+            field.widget.attrs.setdefault("class", css)
+
+    def clean_website(self):
+        if self.cleaned_data.get("website"):
+            raise forms.ValidationError("Spam erkannt.")
+        return ""
 
