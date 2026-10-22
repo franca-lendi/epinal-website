@@ -5,11 +5,12 @@
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Kategorie</th>
-                <th>Ort</th>
+                <!-- d-none d-md-table-cell: auf dem Handy ausgeblendet, damit man nicht seitlich scrollen muss -->
+                <th class="d-none d-md-table-cell">Kategorie</th>
+                <th class="d-none d-lg-table-cell">Ort</th>
                 <th>Preis</th>
-                <th>Datum</th>
-                <th>Bewertung</th>
+                <th class="d-none d-lg-table-cell">Datum</th>
+                <th class="d-none d-sm-table-cell">Bewertung</th>
                 <th><span class="visually-hidden">Favorit</span></th>
             </tr>
         </thead>
@@ -18,11 +19,11 @@
             <!-- activity-col: damit das Herz-Skript die Zeile auf der Favoriten-Seite entfernen kann (wie bei den Kacheln) -->
             <tr class="activity-col">
                 <td><a href="{% url 'activity_detail' activity.pk %}" class="fw-semibold text-decoration-none">{{ activity.title }}</a></td>
-                <td><span class="badge bg-success">{{ activity.category.label }}</span></td>
-                <td>{{ activity.location.city }}</td>
+                <td class="d-none d-md-table-cell">{% for category in activity.categories.all %}<span class="badge bg-success me-1">{{ category.label }}</span>{% endfor %}</td>
+                <td class="d-none d-lg-table-cell">{{ activity.location.city }}</td>
                 <td class="text-nowrap">{% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}</td>
-                <td class="text-nowrap">{% if activity.event_date %}{{ activity.event_date|date:"j. F" }}{% else %}–{% endif %}</td>
-                <td class="stars text-nowrap">
+                <td class="text-nowrap d-none d-lg-table-cell">{% if activity.event_date %}{{ activity.event_date|date:"j. F" }}{% else %}–{% endif %}</td>
+                <td class="stars text-nowrap d-none d-sm-table-cell">
                     {% if activity.rating_count %}
                         {{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small>
                     {% else %}

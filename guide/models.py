@@ -41,15 +41,29 @@ class Location(models.Model):
         return f"{self.address}, {place}" if self.address else place
 
 
+# NEU: Wochentage für die Öffnungszeiten (Kürzel im JSON, kurz für die Anzeige, lang fürs Formular)
+WEEKDAYS = [
+    ("mo", "Mo", "Montag"),
+    ("di", "Di", "Dienstag"),
+    ("mi", "Mi", "Mittwoch"),
+    ("do", "Do", "Donnerstag"),
+    ("fr", "Fr", "Freitag"),
+    ("sa", "Sa", "Samstag"),
+    ("so", "So", "Sonntag"),
+]
+
+
 class Activity(models.Model):
     STATUS_CHOICES = [
         ("published", "Veröffentlicht"),
         ("draft", "Entwurf"),
         ("review", "In Prüfung"),  # NEU: als unangemessen gemeldet, ausgeblendet bis Admin prüft
+        ("pending", "Wartet auf Freigabe"),  # NEU: neu gesendet, erscheint erst, wenn der Admin sie freigibt
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activities")
-    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+    # NEU: bis zu 3 Kategorien pro Aktivität (n:m-Beziehung, Django legt dafür eine Zwischentabelle an)
+    categories = models.ManyToManyField(Category, related_name="activities", verbose_name="Kategorien")
     location = models.ForeignKey(Location, on_delete=models.PROTECT)
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -62,7 +76,13 @@ class Activity(models.Model):
     website = models.URLField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)
-    opening_hours = models.TextField(blank=True)
+    # NEU: Öffnungszeiten pro Wochentag als JSON, z.B.
+    # {"always_open": false, "days": {"mo": {"closed": false, "slots": [["09:00", "12:00"], ["14:00", "18:00"]]},
+    #                                 "so": {"closed": true, "slots": []}}}
+    # Tage, die fehlen, sind unbekannt. "always_open": true = 24/7 offen.
+    opening_hours = models.JSONField("Öffnungszeiten", null=True, blank=True)
+    # früher das freie Textfeld für die Öffnungszeiten, jetzt für Ausnahmen (Feiertage, Winter ...)
+    hours_note = models.TextField("Bemerkung zu den Öffnungszeiten", blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="published")
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -70,6 +90,38 @@ class Activity(models.Model):
 
     def __str__(self):
         return self.title
+
+    def opening_hours_lines(self):
+        # Für die Anzeige: gleiche Zeiten an aufeinanderfolgenden Tagen zusammenfassen,
+        # z.B. [{"days": "Mo–Fr", "text": "09:00–12:00, 14:00–18:00"}, {"days": "So", "text": "geschlossen"}]
+        data = self.opening_hours
+        if not data:
+            return []
+        if data.get("always_open"):
+            return [{"days": "Mo–So", "text": "24 Stunden offen"}]
+
+        lines = []
+        previous_index = None
+        for index, (code, short, _name) in enumerate(WEEKDAYS):
+            day = data.get("days", {}).get(code)
+            if not day:
+                previous_index = None  # unbekannter Tag unterbricht die Gruppe
+                continue
+            if day.get("closed"):
+                text = "geschlossen"
+            else:
+                text = ", ".join(f"{start}–{end}" for start, end in day.get("slots", []))
+            if lines and previous_index == index - 1 and lines[-1]["text"] == text:
+                lines[-1]["last"] = short  # gleich wie gestern: Gruppe verlängern
+            else:
+                lines.append({"first": short, "last": short, "text": text})
+            previous_index = index
+
+        return [
+            {"days": line["first"] if line["first"] == line["last"] else f"{line['first']}–{line['last']}",
+             "text": line["text"]}
+            for line in lines
+        ]
 
     def average_rating(self):
         avg = self.ratings.aggregate(models.Avg("rating"))["rating__avg"]

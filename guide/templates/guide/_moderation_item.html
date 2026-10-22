@@ -1,0 +1,31 @@
+{# Eine Aktivität auf der Seite «Prüfen» #}
+<div class="moderation-item">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+        <div class="moderation-text">
+            <a href="{% url 'activity_detail' activity.pk %}" class="fw-bold text-decoration-none">{{ activity.title }}</a>
+            <div class="mb-1">
+                {% for category in activity.categories.all %}<span class="badge bg-success me-1">{{ category.label }}</span>{% endfor %}
+            </div>
+            <div class="small text-muted">
+                von {{ activity.user.username }} · {{ activity.created_at|date:"j. F Y, H:i" }} · {{ activity.location }}
+            </div>
+            <p class="small mb-0 mt-1">{{ activity.description|truncatechars:160 }}</p>
+            {% if show_reports %}
+                {% for report in activity.reports.all %}
+                    {% if report.status == "open" %}
+                        <div class="small text-danger mt-1">
+                            <i class="bi bi-flag me-1"></i>{{ report.get_reason_display }}{% if report.description %}: {{ report.description }}{% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-secondary btn-sm">Ansehen</a>
+            <form method="post" action="{% url 'approve_activity' activity.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+            </form>
+        </div>
+    </div>
+</div>

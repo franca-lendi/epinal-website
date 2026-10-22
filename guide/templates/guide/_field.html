@@ -1,7 +1,7 @@
 <div class="mb-3">
     <label for="{{ field.id_for_label }}" class="form-label">
         {{ field.label }}
-        {% if not field.field.required %}<span class="text-muted small">(optional)</span>{% endif %}
+        {% if not field.field.required and not field.field.show_as_required %}<span class="text-muted small">(optional)</span>{% endif %}
     </label>
     {{ field }}
     {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}

@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .forms import RegisterForm, ActivityForm, ContactForm, PhotoForm, ReportForm, ReviewForm, SiteInfoForm
-from .models import Activity, ActivityImage, Category, Favorite, Location, Rating, SiteInfo, VisitCounter
+from .models import Activity, ActivityImage, Category, Favorite, Location, Rating, Report, SiteInfo, VisitCounter
 
 
 def with_ratings(queryset):
@@ -57,7 +57,7 @@ def map_points(activities):
             "id": activity.pk,  # verbindet die Nadel mit dem Eintrag in der Liste daneben
             "title": activity.title,
             "url": reverse("activity_detail", args=[activity.pk]),
-            "category": activity.category.label,
+            "category": ", ".join(c.label for c in activity.categories.all()),
             "price": "Kostenlos" if activity.price == 0 else f"{activity.price} €",
             "lat": float(location.latitude),
             "lng": float(location.longitude),
@@ -65,25 +65,37 @@ def map_points(activities):
     return points
 
 
-def category_tree():
+def category_tree(selected=()):
     # Für den Filter: Hauptkategorien, darunter ihre Unterkategorien, je mit der Anzahl veröffentlichter Aktivitäten.
     # Bei der Hauptkategorie zählen alle Unterkategorien mit (auch Vorschläge, die noch nicht freigegeben sind).
-    counts = dict(
-        Activity.objects.filter(status="published").values_list("category").annotate(n=Count("id"))
-    )
+    # Eine Aktivität kann bis zu 3 Kategorien haben. Darum pro Kategorie die Menge (set) der Aktivitäten sammeln:
+    # So zählt eine Aktivität mit Fussball und Basketball bei Sport & Bewegung nur einmal.
+    links = Activity.categories.through.objects.filter(activity__status="published")
+    activities_per_category = {}
+    for activity_id, category_id in links.values_list("activity_id", "category_id"):
+        activities_per_category.setdefault(category_id, set()).add(activity_id)
+
     all_categories = list(Category.objects.order_by("position", "name"))
-    mains = [c for c in all_categories if c.parent_id is None]
+    mains = [c for c in all_categories if c.parent_id is None and c.approved]  # Vorschläge erst nach Freigabe
     for main in mains:
         children = [c for c in all_categories if c.parent_id == main.pk]
         main.subs = [c for c in children if c.approved]  # nur freigegebene im Filter zeigen
         for sub in main.subs:
-            sub.activity_count = counts.get(sub.pk, 0)
-        main.activity_count = counts.get(main.pk, 0) + sum(counts.get(c.pk, 0) for c in children)
+            sub.activity_count = len(activities_per_category.get(sub.pk, set()))
+        together = set(activities_per_category.get(main.pk, set()))
+        for child in children:
+            together |= activities_per_category.get(child.pk, set())
+        main.activity_count = len(together)
+        # Unterkategorien im Filter aufgeklappt zeigen, wenn eine davon gewählt ist
+        main.open = any(str(sub.pk) in selected for sub in main.subs)
     return mains
 
 
 def own_activity_or_404(request, pk):
-    # Nur wer die Aktivität erstellt hat, darf sie bearbeiten oder löschen
+    # Nur wer die Aktivität erstellt hat, darf sie bearbeiten oder löschen.
+    # NEU: der Admin auch (z.B. um einen gemeldeten Fehler zu korrigieren)
+    if request.user.is_staff:
+        return get_object_or_404(Activity, pk=pk)
     return get_object_or_404(Activity, pk=pk, user=request.user)
 
 
@@ -133,7 +145,7 @@ def parse_date(value):
 
 
 def activities(request):
-    activities = Activity.objects.filter(status="published").select_related("category__parent", "location")
+    activities = Activity.objects.filter(status="published").select_related("location").prefetch_related("categories__parent")
 
     # ---------- Suche ----------
     # Sucht im Namen, in der Beschreibung, in der Kategorie und in der Adresse
@@ -143,8 +155,10 @@ def activities(request):
             activities = activities.filter(
                 Q(title__icontains=word)
                 | Q(description__icontains=word)
-                | Q(category__name__icontains=word)
-                | Q(category__parent__name__icontains=word)  # "sport" findet auch Fussball
+                # Kategorien über eine Unterabfrage, damit keine Aktivität doppelt erscheint ("sport" findet auch Fussball)
+                | Q(pk__in=Activity.objects.filter(
+                    Q(categories__name__icontains=word) | Q(categories__parent__name__icontains=word)
+                ).values("pk"))
                 | Q(location__address__icontains=word)
                 | Q(location__city__icontains=word)
             )
@@ -157,7 +171,7 @@ def activities(request):
         chosen = list(Category.objects.filter(pk__in=selected_categories))
         chosen_ids = {c.pk for c in chosen}
         ids = chosen_ids | set(Category.objects.filter(parent_id__in=chosen_ids).values_list("pk", flat=True))
-        activities = activities.filter(category_id__in=ids)
+        activities = activities.filter(pk__in=Activity.objects.filter(categories__in=ids).values("pk"))
         # Zahl auf dem Knopf: Unterkategorien nicht doppelt zählen, wenn ihre Hauptkategorie gewählt ist
         category_count = sum(1 for c in chosen if c.parent_id not in chosen_ids)
 
@@ -196,7 +210,7 @@ def activities(request):
         "activities": activities,
         "view": view,
         "map_points": map_points(activities) if view == "map" else [],
-        "categories": category_tree(),
+        "categories": category_tree(selected_categories),
         "query": query,
         "selected_categories": selected_categories,
         "max_price": int(max_price),
@@ -210,11 +224,11 @@ def activities(request):
 
 def activity_detail(request, pk):
     activity = get_object_or_404(
-        with_favorites(with_ratings(Activity.objects.select_related("category__parent", "location", "user")), request.user),
+        with_favorites(with_ratings(Activity.objects.select_related("location", "user").prefetch_related("categories__parent")), request.user),
         pk=pk,
     )
-    # Entwürfe sieht nur die eigene Person
-    if activity.status != "published" and activity.user != request.user:
+    # Entwürfe und Aktivitäten, die noch nicht freigegeben sind, sieht nur die eigene Person (und der Admin)
+    if activity.status != "published" and activity.user != request.user and not request.user.is_staff:
         raise Http404
 
     my_rating = None
@@ -245,7 +259,7 @@ def favorites(request):
         with_favorites(with_ratings(Activity.objects.filter(status="published")), request.user)
         .filter(is_favorite=True)
         .annotate(favorited_at=Subquery(my_favorites.values("created_at")[:1]))
-        .select_related("category__parent", "location")
+        .select_related("location").prefetch_related("categories__parent")
         .order_by("-favorited_at")
     )
     view = get_view(request)
@@ -294,24 +308,35 @@ def add_activity(request, pk=None):
             new_activity.location = location
             if not activity:
                 new_activity.user = request.user
-            # NEU: "Andere" + eigener Vorschlag -> neue Unterkategorie, aber erst nach Freigabe im Filter sichtbar.
-            # Gibt es sie schon (gross/klein egal), wird die bestehende genommen statt einer doppelten.
-            suggestion = form.cleaned_data.get("new_category", "").strip()
-            if suggestion:
-                new_activity.category, _ = Category.objects.get_or_create(
-                    parent=new_activity.category.parent,
-                    name__iexact=suggestion,
-                    defaults={"name": suggestion, "approved": False, "position": 50},
-                )
             # Knopf "Als Entwurf speichern" oder "Senden"
             was_published = activity is not None and activity.status == "published"
             in_review = activity is not None and activity.status == "review"
             if in_review:
                 # Gemeldet: bleibt in Prüfung, bis der Admin sie freigibt (sonst könnte man die Prüfung umgehen)
                 new_activity.status = "review"
+            elif "save_draft" in request.POST:
+                new_activity.status = "draft"
+            elif was_published:
+                new_activity.status = "published"  # Änderungen an einer freigegebenen Aktivität bleiben online
             else:
-                new_activity.status = "draft" if "save_draft" in request.POST else "published"
+                # NEU: neu gesendet (oder Entwurf gesendet): erst nach Freigabe durch den Admin sichtbar
+                new_activity.status = "pending"
             new_activity.save()
+            # Kategorien (n:m) gehen erst, wenn die Aktivität gespeichert ist
+            new_activity.categories.set(form.cleaned_data["categories"])
+
+            # NEU: «Eigene hinzufügen» + Text -> neue Unterkategorie statt «Andere», aber erst nach Freigabe im Filter.
+            # Gibt es sie schon (gross/klein egal), wird die bestehende genommen statt einer doppelten.
+            # parent=None: Vorschlag für eine neue Hauptkategorie (aus dem Dropdown)
+            for parent, suggestion, replaces in form.cleaned_data["suggestions"]:
+                suggested, _ = Category.objects.get_or_create(
+                    parent=parent,
+                    name__iexact=suggestion,
+                    defaults={"name": suggestion, "approved": False, "position": 50},
+                )
+                if replaces:
+                    new_activity.categories.remove(replaces)
+                new_activity.categories.add(suggested)
 
             if in_review:
                 messages.success(request, "Gespeichert. Die Aktivität bleibt in Prüfung, bis sie freigegeben wird.")
@@ -322,9 +347,9 @@ def add_activity(request, pk=None):
             if was_published:
                 messages.success(request, "Deine Änderungen wurden gespeichert.")
                 return redirect("activity_detail", pk=new_activity.pk)
-            # Neu veröffentlicht: direkt weiter zum Bewerten
-            messages.success(request, "Deine Aktivität ist jetzt online. Wie war dein Besuch?")
-            return redirect("review_activity", pk=new_activity.pk)
+            # NEU: gesendet, wartet auf Freigabe
+            messages.success(request, "Danke! Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden bei den Aktivitäten.")
+            return redirect("my_uploads")
         # Fehler nur in Schritt 2? Dann Schritt 2 gleich anzeigen
         if form.errors and set(form.errors) <= ActivityForm.STEP2_FIELDS:
             start_step = 2
@@ -389,7 +414,7 @@ def my_uploads(request):
         sort = "newest"
     view = get_view(request)
 
-    activities = with_ratings(mine.select_related("category__parent", "location")).order_by(*SORT_OPTIONS[sort][1])
+    activities = with_ratings(mine.select_related("location").prefetch_related("categories__parent")).order_by(*SORT_OPTIONS[sort][1])
     # 8 pro Seite: zusammen mit der "Füge hinzu"-Karte gibt das 3 volle Reihen à 3
     page = Paginator(activities, 8).get_page(request.GET.get("page"))
 
@@ -481,20 +506,80 @@ def report_activity(request, pk, kind):
         report.save()
         if kind == "error":
             messages.success(request, "Danke! Wir prüfen den Fehler und korrigieren ihn.")
-        elif report.reason == "inappropriate":
-            # Unangemessen: sofort ausblenden, bis ein Admin es geprüft hat
+        else:
+            # NEU: jede Meldung (unangemessen, Spam, anderes) blendet sofort aus, bis der Admin sie geprüft hat
             activity.status = "review"
             activity.save(update_fields=["status"])
             messages.success(request, "Danke für deine Meldung. Die Aktivität ist ausgeblendet, bis wir sie geprüft haben.")
             return redirect("activities")
-        else:
-            messages.success(request, "Danke für deine Meldung. Wir schauen sie uns an.")
     else:
         if kind == "error":
             messages.error(request, "Bitte beschreib kurz, was falsch ist.")
         else:
             messages.error(request, "Bitte wähle einen Grund aus.")
     return redirect("activity_detail", pk=activity.pk)
+
+
+# ---------- NEU: Prüfen und Freigeben (nur Admin) ----------
+
+def safe_next(request, fallback):
+    # zurück zur Seite, von der man kam (nur Adressen auf dieser Website)
+    next_url = request.POST.get("next", "")
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+    return redirect(fallback)
+
+
+@staff_member_required
+def moderation(request):
+    # Alles auf einer Seite: neue Aktivitäten, gemeldete Aktivitäten, Vorschläge für Kategorien
+    base = Activity.objects.select_related("user", "location").prefetch_related("categories__parent", "reports")
+    return render(request, "guide/moderation.html", {
+        "pending": base.filter(status="pending").order_by("created_at"),   # älteste zuerst
+        "reported": base.filter(status="review").order_by("updated_at"),
+        "suggestions": Category.objects.filter(approved=False).select_related("parent")
+                                       .annotate(activity_count=Count("activities")),
+        # NEU: offene Fehler-Meldungen zu Aktivitäten, die online sind.
+        # (Meldungen blenden die Aktivität aus, die stehen oben bei «Gemeldet».)
+        "reports": Report.objects.filter(status="open", activity__status="published")
+                                 .select_related("activity", "user").order_by("created_at"),
+    })
+
+
+@staff_member_required
+@require_POST
+def resolve_report(request, pk):
+    # Fehler korrigiert oder Meldung angeschaut: als erledigt markieren
+    report = get_object_or_404(Report, pk=pk)
+    report.status = "erledigt"
+    report.save(update_fields=["status"])
+    messages.success(request, "Als erledigt markiert.")
+    return redirect("moderation")
+
+
+@staff_member_required
+@require_POST
+def approve_activity(request, pk):
+    activity = get_object_or_404(Activity, pk=pk, status__in=["pending", "review"])
+    activity.status = "published"
+    activity.save(update_fields=["status"])
+    # gemeldet und trotzdem in Ordnung: offene Meldungen als erledigt markieren
+    Report.objects.filter(activity=activity, status="open").update(status="erledigt")
+    messages.success(request, f"«{activity.title}» ist jetzt veröffentlicht.")
+    return safe_next(request, "moderation")
+
+
+@staff_member_required
+@require_POST
+def approve_category(request, pk):
+    category = get_object_or_404(Category, pk=pk, approved=False)
+    category.approved = True
+    category.save(update_fields=["approved"])
+    if category.parent:
+        messages.success(request, f"«{category.name}» ist jetzt eine Unterkategorie von «{category.parent.name}».")
+    else:
+        messages.success(request, f"«{category.name}» ist jetzt eine Hauptkategorie.")
+    return redirect("moderation")
 
 
 # ---------- NEU: Über mich ----------

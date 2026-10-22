@@ -1,6 +1,7 @@
 {% load guide_extras %}
 {% comment %}
-Karten-Ansicht: links eine Liste zum Scrollen, rechts die Karte (auf dem Handy: Karte oben, Liste darunter).
+Karten-Ansicht: links eine Liste zum Scrollen, rechts die Karte
+(auf dem Handy: Karte oben, Liste darunter zum seitlich Wischen).
 Jede Aktivität mit Adresse ist eine grüne Nadel. Fährt man mit der Maus über einen Eintrag, öffnet sich
 die passende Nadel. Klickt man auf eine Nadel, wird der Eintrag in der Liste markiert.
 Gleiche Karte wie bei der Adresssuche: Leaflet mit Kartenbildern von OpenStreetMap (gratis, kein Schlüssel).
@@ -29,7 +30,7 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
                         {% if show_status %}
                             {% include "guide/_status_badge.html" %}
                         {% else %}
-                            <span class="badge bg-success">{{ activity.category.label }}</span>
+                            <span>{% for category in activity.categories.all %}<span class="badge bg-success me-1">{{ category.label }}</span>{% endfor %}</span>
                         {% endif %}
                         <!-- stretched-link = der ganze Eintrag ist klickbar -->
                         <a href="{% url 'activity_detail' activity.pk %}" class="map-list-title stretched-link">{{ activity.title }}</a>
@@ -95,7 +96,8 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
         const item = list.querySelector('[data-id="' + id + '"]');
         if (!item) return;
         item.classList.add("active");
-        if (scroll) list.scrollTo({ top: item.offsetTop - 8, behavior: "smooth" });
+        // Computer: Liste scrollt nach unten, Handy: Liste scrollt seitlich
+        if (scroll) list.scrollTo({ top: item.offsetTop - 8, left: item.offsetLeft - 8, behavior: "smooth" });
     }
 
     const markers = {};  // id der Aktivität -> Nadel

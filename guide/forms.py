@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Activity, Category, ContactMessage, Report, SiteInfo
+from .models import WEEKDAYS, Activity, Category, ContactMessage, Report, SiteInfo
 
 
 class RegisterForm(UserCreationForm):
@@ -42,26 +42,21 @@ class ActivityForm(forms.ModelForm):
     latitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
     longitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
 
-    # NEU: eigener Vorschlag, wenn bei der Kategorie "Andere" gewählt ist (z.B. eine Sportart, die fehlt)
-    new_category = forms.CharField(
-        label="Was genau?", max_length=60, required=False,
-        help_text="Wir schauen deinen Vorschlag an und nehmen ihn dann in die Liste auf.",
-        widget=forms.TextInput(attrs={"placeholder": "z.B. Rudern, Klettersteig …"}),
-    )
-
     # Welche Felder zu Schritt 2 gehören (für die Fehleranzeige)
-    STEP2_FIELDS = {"website", "phone", "email", "opening_hours"}
+    STEP2_FIELDS = {"website", "phone", "email", "hours_note", "hours_always"} | {
+        f"hours_{code}_{part}" for code, _, _ in WEEKDAYS
+        for part in ("closed", "open1", "close1", "open2", "close2")
+    }
 
     class Meta:
         model = Activity
         fields = [
-            "title", "category", "description", "price", "duration_minutes",
+            "title", "description", "price", "duration_minutes",
             "event_date", "image",
-            "website", "phone", "email", "opening_hours",
+            "website", "phone", "email", "hours_note",
         ]
         labels = {
             "title": "Name",
-            "category": "Kategorie",
             "description": "Beschreibung",
             "price": "Preis in €",
             "duration_minutes": "Dauer in Minuten",
@@ -70,16 +65,19 @@ class ActivityForm(forms.ModelForm):
             "website": "Website",
             "phone": "Telefonnummer",
             "email": "E-Mail-Adresse",
-            "opening_hours": "Öffnungszeiten",
+            "hours_note": "Bemerkung",
         }
         help_texts = {
             "price": "0 = kostenlos",
         }
         widgets = {
-            "description": forms.Textarea(attrs={"rows": 4}),
-            "opening_hours": forms.Textarea(attrs={
+            "description": forms.Textarea(attrs={
                 "rows": 4,
-                "placeholder": "Mo–Fr: 9:00–18:00\nSa: 10:00–16:00",
+                "placeholder": "Was kann man hier machen? Was ist speziell?",  # hellgrauer Hinweis im leeren Feld
+            }),
+            "hours_note": forms.Textarea(attrs={
+                "rows": 2,
+                "placeholder": "z.B. an Feiertagen geschlossen, im Winter nur bis 17:00",
             }),
             "event_date": forms.DateInput(attrs={"type": "date"}),
         }
@@ -90,44 +88,198 @@ class ActivityForm(forms.ModelForm):
             css = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
             field.widget.attrs["class"] = css
         self.setup_categories()
+        self.setup_opening_hours()
         self.fields["price"].initial = 0
+        # NEU: Foto ist zum Senden Pflicht, für einen Entwurf nicht (Prüfung in clean).
+        # Darum nicht required=True (sonst ginge kein Entwurf ohne Foto), aber ohne «(optional)» anzeigen.
+        self.fields["image"].show_as_required = True
+        self.fields["image"].help_text = "Bitte nur eigene Fotos. Für einen Entwurf kannst du es auch später hinzufügen."
+
+    # ---------- NEU: Öffnungszeiten pro Wochentag ----------
+    def setup_opening_hours(self):
+        # Pro Tag: geschlossen (Häkchen), erste Zeit (open1-close1) und eine zweite nach einer Pause (open2-close2)
+        self.fields["hours_always"] = forms.BooleanField(
+            required=False, label="Immer offen (24/7)",
+            widget=forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
+        )
+        time_widget = {"type": "time", "class": "form-control form-control-sm hours-time"}
+        for code, _short, name in WEEKDAYS:
+            self.fields[f"hours_{code}_closed"] = forms.BooleanField(
+                required=False, label="geschlossen",
+                widget=forms.CheckboxInput(attrs={"class": "form-check-input hours-closed"}),
+            )
+            for n in (1, 2):
+                for part, label in (("open", "von"), ("close", "bis")):
+                    self.fields[f"hours_{code}_{part}{n}"] = forms.TimeField(
+                        required=False, label=f"{name} {label}",
+                        widget=forms.TimeInput(attrs=time_widget, format="%H:%M"),
+                    )
+
+        # beim Bearbeiten: gespeicherte Zeiten eintragen
+        data = self.instance.opening_hours or {}
+        self.initial["hours_always"] = data.get("always_open", False)
+        for code, day in data.get("days", {}).items():
+            self.initial[f"hours_{code}_closed"] = day.get("closed", False)
+            for n, (start, end) in enumerate(day.get("slots", [])[:2], start=1):
+                self.initial[f"hours_{code}_open{n}"] = start
+                self.initial[f"hours_{code}_close{n}"] = end
+
+    @property
+    def hours_days(self):
+        # für das Template: pro Wochentag die Felder
+        days = []
+        for code, short, name in WEEKDAYS:
+            fields = {part: self[f"hours_{code}_{part}"] for part in ("closed", "open1", "close1", "open2", "close2")}
+            days.append({
+                "code": code,
+                "name": name,
+                **fields,
+                "has_pause": bool(fields["open2"].value() or fields["close2"].value()),
+                "errors": [e for f in fields.values() for e in f.errors],
+            })
+        return days
+
+    def build_opening_hours(self, cleaned):
+        # Aus den Feldern das JSON für das Model bauen (siehe Activity.opening_hours)
+        if cleaned.get("hours_always"):
+            return {"always_open": True, "days": {}}
+        days = {}
+        for code, _short, name in WEEKDAYS:
+            if cleaned.get(f"hours_{code}_closed"):
+                days[code] = {"closed": True, "slots": []}
+                continue
+            slots = []
+            for n in (1, 2):
+                start = cleaned.get(f"hours_{code}_open{n}")
+                end = cleaned.get(f"hours_{code}_close{n}")
+                if start and end:
+                    if start == end:
+                        self.add_error(f"hours_{code}_open{n}", f"{name}: Beginn und Ende sind gleich.")
+                    # Ende vor Beginn ist erlaubt: geht über Mitternacht (z.B. Bar 18:00–02:00)
+                    slots.append([start.strftime("%H:%M"), end.strftime("%H:%M")])
+                elif start or end:
+                    self.add_error(f"hours_{code}_open{n}", f"{name}: bitte Beginn und Ende angeben.")
+            if slots:
+                days[code] = {"closed": False, "slots": slots}
+        return {"always_open": False, "days": days} if days else None
+
+    def save(self, commit=True):
+        # Öffnungszeiten sind kein normales Formularfeld: hier ins Model schreiben
+        self.instance.opening_hours = self.cleaned_data.get("opening_hours")
+        return super().save(commit)
+
+    MAX_CATEGORIES = 3
 
     def setup_categories(self):
-        # Kategorie-Auswahl mit Gruppen: pro Hauptkategorie eine Gruppe mit ihren Unterkategorien.
-        # Hauptkategorien ohne Unterkategorien (z.B. Natur & Parks) wählt man direkt.
-        field = self.fields["category"]
-        current = self.instance.category if self.instance.category_id else None
+        # Bis zu 3 Kategorien. Pro Kategorie: Hauptkategorie im Dropdown (main_1, main_2, main_3),
+        # danach «Genauer?» mit den Unterkategorien dieser Hauptkategorie (sub_1, sub_2, sub_3, freiwillig).
+        current = list(self.instance.categories.select_related("parent")) if self.instance.pk else []
         all_categories = list(Category.objects.order_by("position", "name"))
+        current_mains = {c.parent_id or c.pk for c in current}
+        # Vorschläge (noch nicht freigegeben) nur zeigen, wenn diese Aktivität schon so einen hat
+        mains = [c for c in all_categories if c.parent_id is None and (c.approved or c.pk in current_mains)]
+        for main in mains:
+            main.subs = [c for c in all_categories if c.parent_id == main.pk and (c.approved or c in current)]
+        self.category_tree = mains
+        self.mains_by_id = {str(main.pk): main for main in mains}
+        sub_ids = [sub.pk for main in mains for sub in main.subs]
 
-        choices = [("", "Kategorie wählen")]
-        allowed = []
-        for main in [c for c in all_categories if c.parent_id is None]:
-            # Vorschläge (noch nicht freigegeben) nur zeigen, wenn diese Aktivität schon so eine hat
-            subs = [c for c in all_categories if c.parent_id == main.pk and (c.approved or c == current)]
-            if subs:
-                choices.append((main.name, [(c.pk, c.name if c.approved else f"{c.name} (Vorschlag)") for c in subs]))
-                allowed += [c.pk for c in subs]
+        # Dropdown: alle Hauptkategorien, zuletzt «Keine passt? Eigene hinzufügen» (Wert "new")
+        main_choices = [("", "Kategorie wählen")]
+        main_choices += [(main.pk, main.name if main.approved else f"{main.name} (Vorschlag)") for main in mains]
+        main_choices += [("new", "+ Keine passt? Eigene hinzufügen")]
+
+        for i in range(1, self.MAX_CATEGORIES + 1):
+            self.fields[f"main_{i}"] = forms.ChoiceField(
+                choices=main_choices,
+                required=(i == 1),
+                label="Kategorie" if i == 1 else f"{i}. Kategorie",
+                error_messages={"required": "Bitte wähle eine Kategorie."},
+                widget=forms.Select(attrs={"class": "form-select cat-main-select"}),
+            )
+            self.fields[f"sub_{i}"] = forms.ModelChoiceField(
+                queryset=Category.objects.filter(pk__in=sub_ids), required=False,
+            )
+            # NEU: eigener Vorschlag in dieser Zeile, wenn bei «Genauer?» «Eigene hinzufügen» gewählt ist
+            self.fields[f"new_{i}"] = forms.CharField(
+                label="Was fehlt?", max_length=60, required=False,
+                help_text="Wir schauen uns deinen Vorschlag an und nehmen ihn in die Liste auf.",
+                widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "z.B. Rudern, Bäckerei …"}),
+            )
+
+        # beim Bearbeiten: gespeicherte Kategorien in die Zeilen eintragen
+        for i, category in enumerate(current[:self.MAX_CATEGORIES], start=1):
+            if category.parent_id:
+                self.initial[f"main_{i}"] = category.parent_id
+                self.initial[f"sub_{i}"] = category.pk
             else:
-                choices.append((main.pk, main.name))
-                allowed.append(main.pk)
+                self.initial[f"main_{i}"] = category.pk
 
-        # ältere Aktivität, die noch direkt in einer Hauptkategorie mit Unterkategorien ist: behalten können
-        if current and current.pk not in allowed:
-            choices.insert(1, (current.pk, current.name))
-            allowed.append(current.pk)
-
-        field.queryset = Category.objects.filter(pk__in=allowed)  # nur diese sind gültig
-        field.choices = choices                                    # so werden sie angezeigt
+    @property
+    def category_rows(self):
+        # für das Template: pro Zeile das Dropdown und was gewählt ist
+        rows = []
+        for i in range(1, self.MAX_CATEGORIES + 1):
+            main_value = self[f"main_{i}"].value()
+            sub_value = self[f"sub_{i}"].value()
+            rows.append({
+                "i": i,
+                "main": self[f"main_{i}"],
+                "new": self[f"new_{i}"],
+                "main_value": str(main_value) if main_value else "",
+                "sub_value": str(sub_value) if sub_value else "",
+                "hidden": i > 1 and not main_value,  # 2. und 3. Zeile erst nach Klick auf «Weitere Kategorie»
+            })
+        return rows
 
     def clean(self):
         cleaned = super().clean()
         # Ohne Koordinaten gehen Distanzfilter und Karte nicht, deshalb Pflicht
         if cleaned.get("latitude") is None or cleaned.get("longitude") is None:
             self.add_error("address", "Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte.")
-        # Vorschlag nur verwenden, wenn wirklich "Andere" gewählt ist
-        category = cleaned.get("category")
-        if not (category and category.name == "Andere"):
-            cleaned["new_category"] = ""
+        cleaned["opening_hours"] = self.build_opening_hours(cleaned)
+
+        # NEU: Foto Pflicht beim Senden (Knopf «Als Entwurf speichern» heisst save_draft)
+        if "save_draft" not in self.data:
+            image = cleaned.get("image")  # neue Datei, None = nichts geändert, False = gelöscht
+            has_photo = bool(image) or (image is None and bool(self.instance.image))
+            if not has_photo:
+                self.add_error("image", "Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht.")
+
+        # Kategorien aus den Zeilen zusammensetzen: Unterkategorie, wenn gewählt, sonst die Hauptkategorie
+        categories = []
+        suggestions = []  # (Hauptkategorie oder None, eingetippter Vorschlag, Kategorie, die er ersetzt)
+        chosen_mains = set()
+        for i in range(1, self.MAX_CATEGORIES + 1):
+            value = cleaned.get(f"main_{i}")
+            if not value:
+                continue
+            text = (cleaned.get(f"new_{i}") or "").strip()
+            if value == "new":
+                # «Keine passt? Eigene hinzufügen» im Dropdown: Vorschlag für eine neue Hauptkategorie
+                if text:
+                    suggestions.append((None, text, None))
+                else:
+                    self.add_error(f"new_{i}", "Schreib kurz, was fehlt.")
+                continue
+            main = self.mains_by_id[value]
+            # jede Hauptkategorie nur einmal (im Dropdown ist sie dann auch schon ausgegraut)
+            if main.pk in chosen_mains:
+                self.add_error(f"main_{i}", "Diese Kategorie hast du schon gewählt.")
+                continue
+            chosen_mains.add(main.pk)
+            sub = cleaned.get(f"sub_{i}")
+            category = sub if sub and sub.parent_id == main.pk else main
+            if category not in categories:  # zweimal das Gleiche nur einmal speichern
+                categories.append(category)
+            # Vorschlag nur verwenden, wenn in dieser Zeile wirklich «Eigene hinzufügen» (= «Andere») gewählt ist
+            if category.name == "Andere":
+                if text:
+                    suggestions.append((category.parent, text, category))
+                else:
+                    self.add_error(f"new_{i}", "Schreib kurz, was fehlt.")
+        cleaned["categories"] = categories
+        cleaned["suggestions"] = suggestions
         return cleaned
 
 

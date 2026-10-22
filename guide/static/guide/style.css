@@ -327,6 +327,7 @@ main {
 }
 
 .badge-review { background: #fde2e1; color: #b02a37; font-weight: 700; }
+.badge-pending { background: #e3edf9; color: #1f5596; font-weight: 700; }  /* NEU: wartet auf Freigabe */
 
 .review .stars { font-size: 1.3rem; letter-spacing: 2px; }
 
@@ -603,5 +604,85 @@ main {
 
 
 /* ===================== NEU: Unterkategorien im Filter ===================== */
+.cat-main-row { position: relative; padding-right: 2rem; }
 .cat-sub-row { margin-left: 1.5rem; }
-.filter-box .cat-main { margin-top: 0.35rem; }
+/* Pfeil rechts: zeigt, dass es Unterkategorien gibt, und klappt sie auf */
+.cat-toggle {
+    position: absolute;
+    top: -0.1rem;
+    right: 0;
+    width: 1.8rem;
+    height: 1.8rem;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+}
+.cat-toggle:hover { background: #f1f3f5; color: var(--text); }
+.cat-toggle i { display: inline-block; transition: transform 0.2s; transform: rotate(180deg); }
+.cat-toggle.collapsed i { transform: none; }
+
+/* ===================== NEU: Kategorien beim Hinzufügen (bis zu 3) ===================== */
+.pill-sm { padding: 0.25rem 0.75rem; font-size: 0.9rem; }
+/* «Keine passt? Eigene hinzufügen»: gestrichelt und grün, damit es auffällt */
+.pill-new { border-style: dashed; border-color: var(--accent); color: var(--accent); }
+.btn-check:checked + .pill-new { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cat-remove { flex: 0 0 auto; }
+
+/* Karte auf dem Handy: Liste unter der Karte, seitlich wischen */
+@media (max-width: 991px) {
+    .map-list {
+        flex-direction: row;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;   /* bleibt immer schön bei einem Eintrag stehen */
+        padding-bottom: 0.5rem;
+    }
+    .map-list-item { flex: 0 0 85%; scroll-snap-align: start; }
+}
+
+
+/* ===================== NEU: Öffnungszeiten ===================== */
+.hours-day {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr auto;   /* Tag | Zeiten | geschlossen */
+    align-items: start;
+    gap: 0.5rem 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--line);
+}
+.hours-name { font-weight: 700; padding-top: 0.3rem; }
+.hours-slots { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+.hours-slot { display: flex; align-items: center; gap: 0.4rem; }
+.hours-time { width: 7.5rem; }
+.hours-closed-check { padding-top: 0.3rem; white-space: nowrap; }
+.hours-day.is-closed .hours-slots { opacity: 0.4; }
+.hours-error { grid-column: 1 / -1; }
+@media (max-width: 576px) {
+    .hours-day { grid-template-columns: 1fr auto; }
+    .hours-name { grid-column: 1; }
+    .hours-closed-check { grid-column: 2; grid-row: 1; }
+    .hours-slots { grid-column: 1 / -1; }
+    .hours-time { width: 6.5rem; }
+}
+
+/* Anzeige auf der Detailseite */
+.hours-table th { padding-right: 1rem; font-weight: 700; white-space: nowrap; vertical-align: top; }
+.hours-table td { color: var(--text); }
+
+
+/* ===================== NEU: Seite «Prüfen» ===================== */
+.moderation-item {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+}
+.moderation-text { flex: 1; min-width: 240px; }
+
+/* NEU: Kasten «Stimmt etwas nicht?» auf der Detailseite */
+.report-box {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    background: #fafafa;
+}

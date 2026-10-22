@@ -1,0 +1,78 @@
+{% extends "guide/base.html" %}
+
+{% block title %}Prüfen – Épinal Guide{% endblock %}
+
+{% block content %}
+<!-- NEU: nur für den Admin. Neue und gemeldete Aktivitäten freigeben, Kategorie-Vorschläge annehmen. -->
+<h1 class="mb-1">Prüfen</h1>
+<p class="text-muted mb-4">Neue Aktivitäten erscheinen erst, wenn du sie hier freigibst. Löschen oder ändern geht im
+    <a href="{% url 'admin:guide_activity_changelist' %}">Admin</a>.</p>
+
+<h2 class="h4">Wartet auf Freigabe <span class="text-muted fs-6">({{ pending|length }})</span></h2>
+{% for activity in pending %}
+    {% include "guide/_moderation_item.html" %}
+{% empty %}
+    <p class="text-muted">Nichts zu prüfen.</p>
+{% endfor %}
+
+<h2 class="h4 mt-5">Gemeldet <span class="text-muted fs-6">({{ reported|length }})</span></h2>
+<p class="small text-muted">Gemeldet und deshalb ausgeblendet. Freigeben, wenn alles in Ordnung ist. Sonst im Admin löschen.</p>
+{% for activity in reported %}
+    {% include "guide/_moderation_item.html" with show_reports=True %}
+{% empty %}
+    <p class="text-muted">Keine Meldungen.</p>
+{% endfor %}
+
+<h2 class="h4 mt-5">Fehler <span class="text-muted fs-6">({{ reports|length }})</span></h2>
+<p class="small text-muted">Die Aktivität ist weiterhin online. Korrigieren mit «Bearbeiten», danach «Erledigt».</p>
+{% for report in reports %}
+    <div class="moderation-item">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div class="moderation-text">
+                <a href="{% url 'activity_detail' report.activity.pk %}" class="fw-bold text-decoration-none">{{ report.activity.title }}</a>
+                <div class="mt-1">
+                    {% if report.reason == "error" %}
+                        <span class="badge text-bg-warning"><i class="bi bi-pencil-square me-1"></i>Fehler</span>
+                    {% else %}
+                        <span class="badge text-bg-danger"><i class="bi bi-flag me-1"></i>{{ report.get_reason_display }}</span>
+                    {% endif %}
+                </div>
+                {% if report.description %}<p class="small mb-0 mt-1">«{{ report.description }}»</p>{% endif %}
+                <div class="small text-muted mt-1">von {{ report.user.username }} · {{ report.created_at|date:"j. F Y, H:i" }}</div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'edit_activity' report.activity.pk %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-pencil me-1"></i>Bearbeiten
+                </a>
+                <form method="post" action="{% url 'resolve_report' report.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Erledigt</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <p class="text-muted">Keine Fehler gemeldet.</p>
+{% endfor %}
+
+<h2 class="h4 mt-5">Vorschläge für Kategorien <span class="text-muted fs-6">({{ suggestions|length }})</span></h2>
+<p class="small text-muted">Kam bei «Keine passt? Eigene hinzufügen» dazu. Freigeben = erscheint im Filter und beim Hinzufügen.
+    Umbenennen geht im <a href="{% url 'admin:guide_category_changelist' %}?approved__exact=0">Admin</a>.</p>
+{% for category in suggestions %}
+    <div class="moderation-item d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <strong>{{ category.name }}</strong>
+            <span class="text-muted small">
+                {% if category.parent %}in {{ category.parent.name }}{% else %}neue Hauptkategorie{% endif %}
+                · {{ category.activity_count }} Aktivität{{ category.activity_count|pluralize:"en" }}
+            </span>
+        </div>
+        <form method="post" action="{% url 'approve_category' category.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+        </form>
+    </div>
+{% empty %}
+    <p class="text-muted">Keine Vorschläge.</p>
+{% endfor %}
+{% endblock %}

@@ -26,6 +26,12 @@ urlpatterns = [
 
     path("activities/<int:pk>/delete/", views.delete_activity, name="delete_activity"),
 
+    # NEU: Prüfen und Freigeben (nur Admin)
+    path("moderation/", views.moderation, name="moderation"),
+    path("activities/<int:pk>/approve/", views.approve_activity, name="approve_activity"),
+    path("categories/<int:pk>/approve/", views.approve_category, name="approve_category"),
+    path("reports/<int:pk>/done/", views.resolve_report, name="resolve_report"),
+
     path("favorites/", views.favorites, name="favorites"),
 
     # NEU: Herz anklicken (Favorit hinzufügen oder entfernen)

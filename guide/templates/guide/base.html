@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
 
     <!-- Eigenes CSS (?v=2 erhöhen, wenn der Browser alte Änderungen zeigt) -->
-    <link rel="stylesheet" href="{% static 'guide/style.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'guide/style.css' %}?v=12">
 </head>
 
 <body>
@@ -61,6 +61,15 @@
            class="{% if request.resolver_match.url_name in 'my_uploads add_activity edit_activity' %}active{% endif %}">
             <i class="bi bi-upload me-lg-2"></i><span class="d-none d-lg-inline">Deine Uploads</span>
         </a>
+
+        {% if user.is_staff %}
+            <!-- NEU: nur für den Admin, mit Zahl der offenen Dinge (aus guide/context_processors.py) -->
+            <a href="{% url 'moderation' %}" aria-label="Prüfen"
+               class="{% if request.resolver_match.url_name == 'moderation' %}active{% endif %}">
+                <i class="bi bi-shield-check me-lg-2"></i><span class="d-none d-lg-inline">Prüfen</span>
+                {% if moderation_count %}<span class="badge rounded-pill bg-danger ms-1">{{ moderation_count }}</span>{% endif %}
+            </a>
+        {% endif %}
     </div>
 
     <div class="nav-right">

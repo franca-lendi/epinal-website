@@ -58,27 +58,39 @@
                 <div class="border rounded p-3 filter-box"> <!-- p=padding innenabstand -->
                     <!-- Kategorien kommen jetzt aus der Datenbank.
                          Alle Checkboxen heissen "category", dadurch kann man mehrere wählen -->
-                    <!-- NEU: Hauptkategorie und darunter eingerückt ihre Unterkategorien, je mit Anzahl.
-                         Hauptkategorie anklicken = alle Unterkategorien (JavaScript unten, die View macht es auch ohne) -->
+                    <!-- NEU: Hauptkategorien mit Anzahl. Hat eine Unterkategorien, zeigt der Pfeil rechts das an
+                         und klappt sie auf. Hauptkategorie anklicken = alle ihre Unterkategorien (JavaScript unten) -->
                     {% for main in categories %}
-                        <div class="form-check">
+                        <div class="form-check cat-main-row">
                             <input class="form-check-input cat-main" type="checkbox" name="category"
                                    value="{{ main.id }}" id="cat{{ main.id }}"
                                    {% if main.id|stringformat:"s" in selected_categories %}checked{% endif %}>
-                            <label class="form-check-label fw-semibold" for="cat{{ main.id }}">
-                                {{ main.name }} <span class="text-muted fw-normal">({{ main.activity_count }})</span>
+                            <label class="form-check-label" for="cat{{ main.id }}">
+                                {{ main.name }} <span class="text-muted">({{ main.activity_count }})</span>
                             </label>
+                            {% if main.subs %}
+                                <button type="button" class="cat-toggle {% if not main.open %}collapsed{% endif %}"
+                                        data-bs-toggle="collapse" data-bs-target="#subs{{ main.id }}"
+                                        aria-expanded="{% if main.open %}true{% else %}false{% endif %}"
+                                        aria-label="Unterkategorien von {{ main.name }} zeigen">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            {% endif %}
                         </div>
-                        {% for sub in main.subs %}
-                            <div class="form-check cat-sub-row">
-                                <input class="form-check-input cat-sub" type="checkbox" name="category"
-                                       value="{{ sub.id }}" id="cat{{ sub.id }}" data-parent="{{ main.id }}"
-                                       {% if sub.id|stringformat:"s" in selected_categories %}checked{% endif %}>
-                                <label class="form-check-label" for="cat{{ sub.id }}">
-                                    {{ sub.name }} <span class="text-muted">({{ sub.activity_count }})</span>
-                                </label>
+                        {% if main.subs %}
+                            <div class="collapse {% if main.open %}show{% endif %}" id="subs{{ main.id }}">
+                                {% for sub in main.subs %}
+                                    <div class="form-check cat-sub-row">
+                                        <input class="form-check-input cat-sub" type="checkbox" name="category"
+                                               value="{{ sub.id }}" id="cat{{ sub.id }}" data-parent="{{ main.id }}"
+                                               {% if sub.id|stringformat:"s" in selected_categories %}checked{% endif %}>
+                                        <label class="form-check-label" for="cat{{ sub.id }}">
+                                            {{ sub.name }} <span class="text-muted">({{ sub.activity_count }})</span>
+                                        </label>
+                                    </div>
+                                {% endfor %}
                             </div>
-                        {% endfor %}
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>

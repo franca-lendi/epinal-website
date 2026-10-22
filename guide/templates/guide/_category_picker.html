@@ -1,0 +1,62 @@
+{% comment %}
+Kategorien beim Hinzufügen: bis zu 3. Pro Kategorie eine Zeile mit Dropdown (Hauptkategorie).
+Hat die Hauptkategorie Unterkategorien, erscheint darunter «Genauer?» mit Knöpfen (z.B. Fussball, Klettern).
+Zeile 2 und 3 erscheinen erst nach Klick auf «Weitere Kategorie». JavaScript dazu in add_activity.html.
+{% endcomment %}
+{% for row in form.category_rows %}
+    <div class="category-row mb-3 {% if row.hidden %}d-none{% endif %}" data-row="{{ row.i }}">
+        <label for="{{ row.main.id_for_label }}" class="form-label">
+            {{ row.main.label }}{% if row.i > 1 %} <span class="text-muted small">(optional)</span>{% endif %}
+        </label>
+        <div class="d-flex gap-2">
+            {{ row.main }}
+            {% if row.i > 1 %}
+                <button type="button" class="btn btn-outline-secondary cat-remove" aria-label="Kategorie entfernen">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            {% endif %}
+        </div>
+        {% for error in row.main.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+
+        {% for main in form.category_tree %}
+            {% if main.subs %}
+                <div class="cat-sub-options mt-2 {% if row.main_value != main.pk|stringformat:'s' %}d-none{% endif %}" data-main="{{ main.pk }}">
+                    <div class="small text-muted mb-1">Genauer?</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="radio" class="btn-check" name="sub_{{ row.i }}" value=""
+                               id="sub{{ row.i }}_{{ main.pk }}_all" autocomplete="off"
+                               {% if not row.sub_value %}checked{% endif %}>
+                        <label class="pill pill-sm" for="sub{{ row.i }}_{{ main.pk }}_all">Nein, allgemein</label>
+                        {% for sub in main.subs %}
+                            <input type="radio" class="btn-check" name="sub_{{ row.i }}" value="{{ sub.pk }}"
+                                   id="sub{{ row.i }}_{{ sub.pk }}" data-name="{{ sub.name }}" autocomplete="off"
+                                   {% if row.sub_value == sub.pk|stringformat:"s" %}checked{% endif %}>
+                            {% if sub.name == "Andere" %}
+                                <!-- «Andere» heisst auf der Seite so, damit man sieht, dass man etwas vorschlagen kann -->
+                                <label class="pill pill-sm pill-new" for="sub{{ row.i }}_{{ sub.pk }}">
+                                    <i class="bi bi-plus-lg me-1"></i>Keine passt? Eigene hinzufügen
+                                </label>
+                            {% else %}
+                                <label class="pill pill-sm" for="sub{{ row.i }}_{{ sub.pk }}">
+                                    {{ sub.name }}{% if not sub.approved %} (Vorschlag){% endif %}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- erscheint direkt darunter, wenn «Eigene hinzufügen» gewählt ist -->
+        <div class="cat-new mt-2 {% if not row.new.value and not row.new.errors %}d-none{% endif %}">
+            <label for="{{ row.new.id_for_label }}" class="form-label small mb-1">{{ row.new.label }}</label>
+            {{ row.new }}
+            <div class="form-text">{{ row.new.help_text }}</div>
+            {% for error in row.new.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+{% endfor %}
+
+<button type="button" class="btn btn-outline-primary btn-sm mb-3" id="addCategoryRow">
+    <i class="bi bi-plus-lg me-1"></i>Weitere Kategorie
+</button>

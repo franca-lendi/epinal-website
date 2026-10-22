@@ -9,10 +9,28 @@
 
     <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-arrow-left me-1"></i>Alle Aktivitäten</a>
 
-    {% if activity.status == 'review' %}
+    {% if user.is_staff and activity.status == 'pending' or user.is_staff and activity.status == 'review' %}
+        <!-- NEU: nur für den Admin -->
+        <div class="alert alert-info mt-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>
+                <strong>{% if activity.status == 'review' %}Gemeldet{% else %}Wartet auf Freigabe{% endif %}.</strong>
+                Für andere noch nicht sichtbar.
+            </span>
+            <form method="post" action="{% url 'approve_activity' activity.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'activity_detail' activity.pk %}">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+            </form>
+        </div>
+    {% elif activity.status == 'review' %}
         <div class="alert alert-danger mt-3">
-            <strong>In Prüfung:</strong> Diese Aktivität wurde als unangemessen gemeldet und ist für andere ausgeblendet,
+            <strong>In Prüfung:</strong> Diese Aktivität wurde gemeldet und ist für andere ausgeblendet,
             bis sie geprüft ist. Nur du siehst sie.
+        </div>
+    {% elif activity.status == 'pending' %}
+        <div class="alert alert-info mt-3">
+            <strong>Wartet auf Freigabe:</strong> Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden
+            bei den Aktivitäten. Bis dahin siehst nur du sie.
         </div>
     {% elif activity.status != 'published' %}
         <div class="alert alert-warning mt-3">
@@ -24,7 +42,7 @@
     <!-- Titel und Bewertung -->
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mt-3 mb-4">
         <div>
-            <span class="badge bg-success mb-2">{{ activity.category.label }}</span>
+            {% for category in activity.categories.all %}<span class="badge bg-success me-1 mb-2">{{ category.label }}</span>{% endfor %}
             <h1 class="detail-title">{{ activity.title }}</h1>
             <div class="d-flex align-items-center gap-2">
                 {% if activity.rating_count %}
@@ -166,34 +184,43 @@
                     </a>
                 {% endif %}
 
-                {% if activity.opening_hours %}
+                {% with lines=activity.opening_hours_lines %}
+                {% if lines or activity.hours_note %}
                     <hr>
                     <h3 class="h6">Öffnungszeiten</h3>
-                    <p class="mb-0">{{ activity.opening_hours|linebreaksbr }}</p>
+                    {% if lines %}
+                        <!-- gleiche Zeiten an mehreren Tagen sind zusammengefasst, z.B. Mo–Fr -->
+                        <table class="hours-table">
+                            {% for line in lines %}
+                                <tr><th>{{ line.days }}</th><td>{{ line.text }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    {% endif %}
+                    {% if activity.hours_note %}
+                        <p class="small text-muted mb-0 mt-1">{{ activity.hours_note|linebreaksbr }}</p>
+                    {% endif %}
                 {% endif %}
+                {% endwith %}
 
                 <hr>
                 <p class="small text-muted mb-0">Hinzugefügt von {{ activity.user.username }} am {{ activity.created_at|date:"j. F Y" }}</p>
             </div>
 
-            <!-- Melden und Fehler melden -->
+            <!-- Melden und Fehler melden: eigener Kasten, damit man es findet (nicht eingeloggt: zuerst Login) -->
             {% if activity.status == 'published' %}
-            <div class="d-flex gap-3 mt-3 small">
-                {% if user.is_authenticated %}
-                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#errorModal">
+            <div class="report-box mt-3">
+                <div class="fw-bold mb-2">Stimmt etwas nicht?</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
+                            data-bs-target="{% if user.is_authenticated %}#errorModal{% else %}#loginModal{% endif %}">
                         <i class="bi bi-pencil-square me-1"></i>Fehler melden
                     </button>
-                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#reportModal">
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
+                            data-bs-target="{% if user.is_authenticated %}#reportModal{% else %}#loginModal{% endif %}">
                         <i class="bi bi-flag me-1"></i>Melden
                     </button>
-                {% else %}
-                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <i class="bi bi-pencil-square me-1"></i>Fehler melden
-                    </button>
-                    <button type="button" class="btn btn-link link-secondary p-0" data-bs-toggle="modal" data-bs-target="#loginModal">
-                        <i class="bi bi-flag me-1"></i>Melden
-                    </button>
-                {% endif %}
+                </div>
+                <div class="small text-muted mt-2">Fehler: z.B. falsche Adresse oder Öffnungszeiten. Melden: Spam oder unpassender Inhalt, wird sofort ausgeblendet.</div>
             </div>
             {% endif %}
         </div>

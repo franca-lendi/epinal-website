@@ -38,13 +38,16 @@ class GuideTests(TestCase):
 
     def make_activity(self, user, status="published", title="Eislaufen"):
         location = Location.objects.create(address="2 Faubourg de Poissompré", city="Épinal")
-        return Activity.objects.create(user=user, category=self.category, location=location,
-                                       title=title, description="Eishalle", status=status)
+        activity = Activity.objects.create(user=user, location=location,
+                                           title=title, description="Eishalle", status=status)
+        activity.categories.set([self.category])
+        return activity
 
     def form_data(self, **extra):
         data = {
             "title": "Patinoire",
-            "category": self.category.pk,
+            "main_1": self.category.parent_id,  # Sport & Bewegung
+            "sub_1": self.category.pk,          # genauer: Fussball
             "description": "Eislaufen in Épinal",
             "address": "2 Faubourg de Poissompré",
             "postal_code": "88000",
@@ -56,7 +59,8 @@ class GuideTests(TestCase):
             "website": "",
             "phone": "",
             "email": "",
-            "opening_hours": "Mo–Fr: 10:00–18:00",
+            "hours_mo_open1": "10:00", "hours_mo_close1": "18:00",
+            "image": fake_photo(),  # Foto ist zum Senden Pflicht
         }
         data.update(extra)
         return data
@@ -68,14 +72,30 @@ class GuideTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("login", response.url)
 
-    def test_add_goes_to_review(self):
+    def test_add_waits_for_approval(self):
         self.client.login(username="anna", password="geheim12345")
         response = self.client.post(reverse("add_activity"), self.form_data(image=fake_photo()))
         activity = Activity.objects.get(title="Patinoire")
-        self.assertRedirects(response, reverse("review_activity", args=[activity.pk]))
-        self.assertEqual(activity.status, "published")
+        self.assertRedirects(response, reverse("my_uploads"))
+        self.assertEqual(activity.status, "pending")
 
-        # sofort bei den Aktivitäten sichtbar und klickbar
+        # noch nicht bei den Aktivitäten, aber bei «Deine Uploads» mit Hinweis
+        self.assertNotContains(self.client.get(reverse("activities")), "Patinoire")
+        self.assertContains(self.client.get(reverse("my_uploads")), "Wartet auf Freigabe")
+        # für andere nicht erreichbar
+        self.client.login(username="ben", password="geheim12345")
+        self.assertEqual(self.client.get(reverse("activity_detail", args=[activity.pk])).status_code, 404)
+
+    def test_admin_approves(self):
+        self.client.login(username="anna", password="geheim12345")
+        self.client.post(reverse("add_activity"), self.form_data())
+        activity = Activity.objects.get(title="Patinoire")
+        User.objects.create_superuser("admin", "admin@test.ch", "geheim12345")
+        self.client.login(username="admin", password="geheim12345")
+        self.client.post(reverse("admin:guide_activity_changelist"),
+                         {"action": "approve", "_selected_action": [activity.pk]})
+        activity.refresh_from_db()
+        self.assertEqual(activity.status, "published")
         page = self.client.get(reverse("activities"))
         self.assertContains(page, "Patinoire")
         self.assertContains(page, reverse("activity_detail", args=[activity.pk]))
@@ -113,6 +133,18 @@ class GuideTests(TestCase):
         page = self.client.get(reverse("edit_activity", args=[activity.pk]))
         self.assertContains(page, 'value="48.1752000"')
         self.assertContains(page, 'value="88000"')
+
+    def test_photo_required_to_send(self):
+        self.client.login(username="anna", password="geheim12345")
+        data = self.form_data()
+        del data["image"]
+        response = self.client.post(reverse("add_activity"), data)
+        self.assertContains(response, "Bitte füge ein Foto hinzu")
+        self.assertFalse(Activity.objects.exists())
+        # als Entwurf geht es ohne Foto
+        data["save_draft"] = ""
+        self.client.post(reverse("add_activity"), data)
+        self.assertEqual(Activity.objects.get().status, "draft")
 
     def test_save_as_draft(self):
         self.client.login(username="anna", password="geheim12345")
@@ -258,14 +290,14 @@ class GuideTests(TestCase):
     def test_report_and_error(self):
         activity = self.make_activity(self.anna)
         self.client.login(username="ben", password="geheim12345")
-        self.client.post(reverse("report_activity", args=[activity.pk]), {"reason": "spam"})
         self.client.post(reverse("report_error", args=[activity.pk]), {"description": "Montag geschlossen"})
+        self.client.post(reverse("report_activity", args=[activity.pk]), {"reason": "spam"})
         self.assertEqual(Report.objects.count(), 2)
         self.assertEqual(Report.objects.get(description="Montag geschlossen").reason, "error")
 
-        # Spam blendet NICHT aus, nur "Unangemessen"
+        # NEU: jede Meldung blendet aus (auch Spam), ein Fehler nicht
         activity.refresh_from_db()
-        self.assertEqual(activity.status, "published")
+        self.assertEqual(activity.status, "review")
 
         # "error" ist beim normalen Melden nicht erlaubt, Fehler melden ohne Text auch nicht
         self.client.post(reverse("report_activity", args=[activity.pk]), {"reason": "error"})
@@ -273,40 +305,261 @@ class GuideTests(TestCase):
         self.assertEqual(Report.objects.count(), 2)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
 class CategorySuggestionTests(TestCase):
-    """NEU: bei "Andere" eine eigene Sportart vorschlagen"""
+    """NEU: Kategorien beim Hinzufügen (Dropdown + «Genauer?») und bei «Andere» eine eigene Sportart vorschlagen"""
 
     def setUp(self):
         self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
         self.client.force_login(self.anna)
-        self.andere = Category.objects.get(name="Andere")
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+        self.natur = Category.objects.get(name="Natur & Parks")
+        self.fussball = Category.objects.get(name="Fussball")
+        self.andere = Category.objects.get(name="Andere", parent=self.sport)
 
-    def post(self, category, suggestion):
-        return self.client.post(reverse("add_activity"), {
-            "title": "Rudern auf der Mosel", "category": category.pk, "new_category": suggestion,
+    def post(self, rows, suggestion=""):
+        # rows = [(Hauptkategorie, Unterkategorie oder None), ...] wie die Zeilen im Formular
+        data = {
+            "title": "Rudern auf der Mosel", "new_1": suggestion, "image": fake_photo(),
             "description": "x", "address": "Quai", "postal_code": "88000", "city": "Épinal",
             "latitude": "48.17", "longitude": "6.45", "price": "0",
-        })
+        }
+        for i, (main, sub) in enumerate(rows, start=1):
+            data[f"main_{i}"] = main.pk
+            data[f"sub_{i}"] = sub.pk if sub else ""
+        return self.client.post(reverse("add_activity"), data)
+
+    def saved(self):
+        activity = Activity.objects.get(title="Rudern auf der Mosel")
+        return {c.name for c in activity.categories.all()}
+
+    def test_main_category_only(self):
+        self.post([(self.sport, None)])
+        self.assertEqual(self.saved(), {"Sport & Bewegung"})
+
+    def test_main_with_subcategory(self):
+        self.post([(self.sport, self.fussball)])
+        self.assertEqual(self.saved(), {"Fussball"})
+
+    def test_subcategory_must_belong_to_main(self):
+        # Fussball passt nicht zu Natur & Parks: dann gilt einfach die Hauptkategorie
+        self.post([(self.natur, self.fussball)])
+        self.assertEqual(self.saved(), {"Natur & Parks"})
+
+    def test_up_to_three_categories(self):
+        kultur = Category.objects.get(name="Kultur & Museen")
+        self.post([(self.natur, None), (self.sport, self.fussball), (kultur, None)])
+        self.assertEqual(self.saved(), {"Natur & Parks", "Fussball", "Kultur & Museen"})
+
+    def test_same_main_category_twice_not_allowed(self):
+        response = self.post([(self.sport, self.fussball), (self.sport, None)])
+        self.assertContains(response, "Diese Kategorie hast du schon gewählt.")
+        self.assertFalse(Activity.objects.filter(title="Rudern auf der Mosel").exists())
+
+    def test_at_least_one_category(self):
+        response = self.post([])
+        self.assertContains(response, "Bitte wähle eine Kategorie.")
+        self.assertFalse(Activity.objects.filter(title="Rudern auf der Mosel").exists())
 
     def test_suggestion_creates_hidden_subcategory(self):
-        self.post(self.andere, "Rudern")
-        activity = Activity.objects.get(title="Rudern auf der Mosel")
-        self.assertEqual(activity.category.name, "Rudern")
-        self.assertEqual(activity.category.parent.name, "Sport & Bewegung")
-        self.assertFalse(activity.category.approved)
-        # noch nicht im Filter, aber die Aktivität zählt bei Sport mit
+        self.post([(self.sport, self.andere)], "Rudern")
+        category = Activity.objects.get(title="Rudern auf der Mosel").categories.get()  # "Andere" ersetzt
+        self.assertEqual(category.name, "Rudern")
+        self.assertEqual(category.parent.name, "Sport & Bewegung")
+        self.assertFalse(category.approved)
+        Activity.objects.update(status="published")  # Admin gibt die Aktivität frei
+        # Vorschlag noch nicht im Filter, aber die Aktivität zählt bei Sport mit
         sport = next(c for c in self.client.get(reverse("activities")).context["categories"] if c.name == "Sport & Bewegung")
         self.assertNotIn("Rudern", [c.name for c in sport.subs])
         self.assertEqual(sport.activity_count, 1)
 
     def test_same_suggestion_not_twice(self):
-        self.post(self.andere, "Rudern")
-        self.post(self.andere, "rudern")
+        self.post([(self.sport, self.andere)], "Rudern")
+        self.post([(self.sport, self.andere)], "rudern")
         self.assertEqual(Category.objects.filter(name__iexact="rudern").count(), 1)
 
+    def test_eigene_without_text_is_error(self):
+        response = self.post([(self.sport, self.andere)], "")
+        self.assertContains(response, "Schreib kurz, was fehlt.")
+        self.assertFalse(Activity.objects.filter(title="Rudern auf der Mosel").exists())
+
+    def test_suggestion_for_essen(self):
+        essen = Category.objects.get(name="Essen & Trinken")
+        andere = Category.objects.get(name="Andere", parent=essen)
+        self.post([(essen, andere)], "Glacé")
+        category = Activity.objects.get(title="Rudern auf der Mosel").categories.get()
+        self.assertEqual((category.name, category.parent.name), ("Glacé", "Essen & Trinken"))
+
+    def test_button_text_on_page(self):
+        self.assertContains(self.client.get(reverse("add_activity")), "Keine passt? Eigene hinzufügen")
+
+    def test_new_main_category_from_dropdown(self):
+        data = {
+            "title": "Rudern auf der Mosel", "main_1": "new", "new_1": "Wassersport", "image": fake_photo(),
+            "description": "x", "address": "Quai", "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0",
+        }
+        self.client.post(reverse("add_activity"), data)
+        category = Activity.objects.get(title="Rudern auf der Mosel").categories.get()
+        self.assertEqual(category.name, "Wassersport")
+        self.assertIsNone(category.parent)
+        self.assertFalse(category.approved)
+        # noch nicht im Filter
+        Activity.objects.update(status="published")
+        names = [c.name for c in self.client.get(reverse("activities")).context["categories"]]
+        self.assertNotIn("Wassersport", names)
+
+    def test_new_main_without_text_is_error(self):
+        data = {"title": "X", "main_1": "new", "new_1": "", "description": "x", "address": "Quai",
+                "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0", "image": fake_photo()}
+        response = self.client.post(reverse("add_activity"), data)
+        self.assertContains(response, "Schreib kurz, was fehlt.")
+
     def test_suggestion_ignored_without_andere(self):
-        self.post(Category.objects.get(name="Fussball"), "Rudern")
+        self.post([(self.sport, self.fussball)], "Rudern")
         self.assertFalse(Category.objects.filter(name="Rudern").exists())
+
+    def test_edit_shows_saved_categories(self):
+        self.post([(self.sport, self.fussball), (self.natur, None)])
+        activity = Activity.objects.get(title="Rudern auf der Mosel")
+        form = self.client.get(reverse("edit_activity", args=[activity.pk])).context["form"]
+        rows = form.category_rows
+        self.assertEqual({(r["main_value"], r["sub_value"]) for r in rows if r["main_value"]},
+                         {(str(self.sport.pk), str(self.fussball.pk)), (str(self.natur.pk), "")})
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class ModerationTests(TestCase):
+    """NEU: Seite «Prüfen» und Freigeben auf der Website"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.admin = User.objects.create_user("chefin", "chefin@test.ch", "geheim12345", is_staff=True)
+        location = Location.objects.create(city="Épinal")
+        self.new = Activity.objects.create(user=self.anna, location=location, title="Neu", description="x", status="pending")
+        self.reported = Activity.objects.create(user=self.anna, location=location, title="Gemeldet", description="x", status="review")
+        Report.objects.create(user=self.anna, activity=self.reported, reason="inappropriate")
+        sport = Category.objects.get(name="Sport & Bewegung")
+        self.suggestion = Category.objects.create(name="Rudern", parent=sport, approved=False)
+
+    def test_only_admin(self):
+        self.client.force_login(self.anna)
+        self.assertNotEqual(self.client.get(reverse("moderation")).status_code, 200)
+        self.client.post(reverse("approve_activity", args=[self.new.pk]))
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "pending")
+
+    def test_page_lists_everything_and_nav_count(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("moderation"))
+        self.assertContains(page, "Neu")
+        self.assertContains(page, "Gemeldet")
+        self.assertContains(page, "Unangemessen")
+        self.assertContains(page, "Rudern")
+        self.assertEqual(page.context["moderation_count"], 3)
+
+    def test_approve_activity(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("approve_activity", args=[self.reported.pk]))
+        self.reported.refresh_from_db()
+        self.assertEqual(self.reported.status, "published")
+        self.assertFalse(Report.objects.filter(activity=self.reported, status="open").exists())
+        self.assertContains(self.client.get(reverse("activities")), "Gemeldet")
+
+    def test_admin_sees_pending_detail_with_button(self):
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("activity_detail", args=[self.new.pk]))
+        self.assertContains(page, reverse("approve_activity", args=[self.new.pk]))
+
+    def test_error_report_on_moderation_page(self):
+        published = Activity.objects.create(user=self.anna, location=self.new.location, title="Online", description="x")
+        report = Report.objects.create(user=self.anna, activity=published, reason="error", description="Adresse falsch")
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse("moderation"))
+        self.assertContains(page, "Adresse falsch")
+        self.assertEqual(page.context["moderation_count"], 4)
+        # Admin darf die fremde Aktivität bearbeiten, um den Fehler zu korrigieren
+        self.assertEqual(self.client.get(reverse("edit_activity", args=[published.pk])).status_code, 200)
+        # erledigt: weg von der Liste
+        self.client.post(reverse("resolve_report", args=[report.pk]))
+        self.assertNotContains(self.client.get(reverse("moderation")), "Adresse falsch")
+
+    def test_report_buttons_visible(self):
+        published = Activity.objects.create(user=self.anna, location=self.new.location, title="Online", description="x")
+        page = self.client.get(reverse("activity_detail", args=[published.pk]))
+        self.assertContains(page, "Stimmt etwas nicht?")
+        self.assertContains(page, '<i class="bi bi-flag me-1"></i>Melden')
+
+    def test_approve_category(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("approve_category", args=[self.suggestion.pk]))
+        self.suggestion.refresh_from_db()
+        self.assertTrue(self.suggestion.approved)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class OpeningHoursTests(TestCase):
+    """NEU: Öffnungszeiten pro Wochentag"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+
+    def post(self, **hours):
+        data = {
+            "title": "Musée", "main_1": self.sport.pk, "description": "x", "address": "Quai",
+            "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0", "image": fake_photo(), **hours,
+        }
+        return self.client.post(reverse("add_activity"), data)
+
+    def week(self, start="09:00", end="18:00", days=("mo", "di", "mi", "do", "fr")):
+        data = {}
+        for d in days:
+            data[f"hours_{d}_open1"] = start
+            data[f"hours_{d}_close1"] = end
+        return data
+
+    def test_saved_as_json_and_grouped(self):
+        self.post(**self.week(), hours_sa_open1="10:00", hours_sa_close1="16:00", hours_so_closed="on")
+        activity = Activity.objects.get(title="Musée")
+        self.assertEqual(activity.opening_hours["days"]["mo"], {"closed": False, "slots": [["09:00", "18:00"]]})
+        self.assertEqual(activity.opening_hours_lines(), [
+            {"days": "Mo–Fr", "text": "09:00–18:00"},
+            {"days": "Sa", "text": "10:00–16:00"},
+            {"days": "So", "text": "geschlossen"},
+        ])
+
+    def test_pause(self):
+        self.post(hours_mo_open1="09:00", hours_mo_close1="12:00", hours_mo_open2="14:00", hours_mo_close2="18:00")
+        self.assertEqual(Activity.objects.get(title="Musée").opening_hours_lines(),
+                         [{"days": "Mo", "text": "09:00–12:00, 14:00–18:00"}])
+
+    def test_always_open(self):
+        self.post(hours_always="on", **self.week())
+        activity = Activity.objects.get(title="Musée")
+        self.assertTrue(activity.opening_hours["always_open"])
+        self.assertEqual(activity.opening_hours_lines(), [{"days": "Mo–So", "text": "24 Stunden offen"}])
+
+    def test_over_midnight_allowed(self):
+        self.post(hours_fr_open1="18:00", hours_fr_close1="02:00")
+        self.assertEqual(Activity.objects.get(title="Musée").opening_hours_lines(), [{"days": "Fr", "text": "18:00–02:00"}])
+
+    def test_missing_end_is_error(self):
+        response = self.post(hours_mo_open1="09:00")
+        self.assertContains(response, "Montag: bitte Beginn und Ende angeben.")
+        self.assertFalse(Activity.objects.filter(title="Musée").exists())
+
+    def test_nothing_entered(self):
+        self.post()
+        self.assertIsNone(Activity.objects.get(title="Musée").opening_hours)
+
+    def test_edit_shows_saved_hours(self):
+        self.post(hours_mo_open1="09:00", hours_mo_close1="12:00", hours_mo_open2="14:00", hours_mo_close2="18:00")
+        activity = Activity.objects.get(title="Musée")
+        form = self.client.get(reverse("edit_activity", args=[activity.pk])).context["form"]
+        monday = form.hours_days[0]
+        self.assertEqual(monday["open1"].value(), "09:00")
+        self.assertTrue(monday["has_pause"])
 
 
 class SearchFilterFavoriteTests(TestCase):
@@ -320,8 +573,10 @@ class SearchFilterFavoriteTests(TestCase):
 
         def make(title, category, price=0, date=None, address="", description="Text", status="published"):
             location = Location.objects.create(address=address, city="Épinal")
-            return Activity.objects.create(user=self.anna, category=category, location=location, title=title,
-                                           description=description, price=price, event_date=date, status=status)
+            activity = Activity.objects.create(user=self.anna, location=location, title=title,
+                                               description=description, price=price, event_date=date, status=status)
+            activity.categories.set([category])
+            return activity
 
         self.eis = make("Patinoire", self.sport, price=6, address="2 Faubourg de Poissompré")
         self.parc = make("Parc du Château", self.park, description="Grosser Park mit Tieren")
@@ -365,7 +620,7 @@ class SearchFilterFavoriteTests(TestCase):
         # Fussball gehört zu Sport: zählt bei Sport mit und erscheint beim Filter "Sport"
         fussball = Category.objects.get(name="Fussball")
         location = Location.objects.create(city="Épinal")
-        Activity.objects.create(user=self.anna, category=fussball, location=location, title="Stade", description="x")
+        Activity.objects.create(user=self.anna, location=location, title="Stade", description="x").categories.set([fussball])
         response = self.client.get(reverse("activities"))
         sport = next(c for c in response.context["categories"] if c.name == "Sport & Bewegung")
         self.assertEqual(sport.activity_count, 3)
@@ -444,6 +699,7 @@ class SearchFilterFavoriteTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
 class ModerationAndUploadsTests(TestCase):
     """Unangemessen melden blendet aus, "Füge hinzu"-Karte bei Deine Uploads"""
 
@@ -452,8 +708,9 @@ class ModerationAndUploadsTests(TestCase):
         self.ben = User.objects.create_user("ben", "ben@test.ch", "geheim12345")
         category = Category.objects.get(name="Sport & Bewegung")
         location = Location.objects.create(address="Rue 1", city="Épinal")
-        self.activity = Activity.objects.create(user=self.anna, category=category, location=location,
+        self.activity = Activity.objects.create(user=self.anna, location=location,
                                                 title="Patinoire", description="Eishalle", status="published")
+        self.activity.categories.set([category])
 
     def test_inappropriate_hides_activity(self):
         self.client.login(username="ben", password="geheim12345")
@@ -476,8 +733,9 @@ class ModerationAndUploadsTests(TestCase):
         self.activity.save()
         self.client.login(username="anna", password="geheim12345")
         self.client.post(reverse("edit_activity", args=[self.activity.pk]), {
-            "title": "Patinoire neu", "category": self.activity.category_id, "description": "x",
+            "title": "Patinoire neu", "main_1": self.activity.categories.get().pk, "description": "x",
             "address": "Rue 1", "city": "Épinal", "price": "0", "latitude": "48.17", "longitude": "6.45",
+            "image": fake_photo(),
         })
         self.activity.refresh_from_db()
         self.assertEqual(self.activity.title, "Patinoire neu")
