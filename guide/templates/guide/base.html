@@ -1,6 +1,7 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
-<html lang="de">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,86 +19,97 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
 
     <!-- Eigenes CSS (?v=2 erhöhen, wenn der Browser alte Änderungen zeigt) -->
-    <link rel="stylesheet" href="{% static 'guide/style.css' %}?v=12">
+    <link rel="stylesheet" href="{% static 'guide/style.css' %}?v=61">
 </head>
 
-<body>
+<body class="colored-page {% block body_class %}{% endblock %}">  <!-- colored-page = Salbei-Hintergrund auf allen Seiten; einzelne Seiten können weitere Klassen setzen -->
 
     <!-- Obere Zeile (verschwindet beim Scrollen) -->
     <div class="top-bar px-3 px-md-4 px-xl-5 py-3 py-md-4">
-        <p class="tagline">Irgendein Text,<br>der bisschen beschreibt.</p>
+        <p class="tagline">{% translate "Irgendein Text," %}<br>{% translate "der bisschen beschreibt." %}</p>
         <a href="{% url 'activities' %}" class="logo">
             <img src="{% static 'guide/logo.png' %}" alt="Titel"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
             <span style="display:none;">Titel1</span>
         </a>
         <div class="top-links">
-            <a href="{% url 'about' %}">Über mich</a>
-            <a href="{% url 'contact' %}">Kontakt</a>
+            <a href="{% url 'about' %}">{% translate "Über mich" %}</a>
+            <a href="{% url 'contact' %}">{% translate "Kontakt" %}</a>
         </div>
     </div>
 
 <!-- Navigation (bleibt oben kleben) -->
 <nav class="main-nav px-3 px-md-4 px-xl-5">
     <div class="nav-left">
-        <a href="{% url 'activities' %}" aria-label="Aktivitäten"
+        <a href="{% url 'activities' %}" aria-label="{% translate "Aktivitäten" %}"
            class="{% if request.resolver_match.url_name == 'activities' %}active{% endif %}">
             <i class="bi bi-compass me-1"></i>
             <i class="bi bi-list-stars me-1"></i>
             <i class="bi bi-list-task me-1"></i>
             <i class="bi bi-list-ul me-lg-2"></i>
-            <span class="d-none d-lg-inline">Aktivitäten</span>
+            <span class="d-none d-lg-inline">{% translate "Aktivitäten" %}</span>
         </a>
 
-        <a href="{% url 'favorites' %}" aria-label="Favoriten"
+        <a href="{% url 'favorites' %}" aria-label="{% translate "Favoriten" %}"
            class="{% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
-            <i class="bi bi-suit-heart me-1"></i>
-            <i class="bi bi-heart me-1"></i>
-            <i class="bi bi-balloon-heart me-lg-2"></i>
-            <span class="d-none d-lg-inline">Favoriten</span>
+            <!-- NEU: das gleiche rote Herz wie beim Speichern -->
+            <i class="bi bi-heart-fill nav-heart me-lg-2"></i>
+            <span class="d-none d-lg-inline">{% translate "Favoriten" %}</span>
         </a>
 
-        <a href="{% url 'my_uploads' %}" aria-label="Deine Uploads"
+        <a href="{% url 'my_uploads' %}" aria-label="{% translate "Deine Uploads" %}{% if unread_notifications %}, {{ unread_notifications }} {% translate "neue Mitteilungen" %}{% endif %}"
            class="{% if request.resolver_match.url_name in 'my_uploads add_activity edit_activity' %}active{% endif %}">
-            <i class="bi bi-upload me-lg-2"></i><span class="d-none d-lg-inline">Deine Uploads</span>
+            <i class="bi bi-upload me-lg-2"></i><span class="d-none d-lg-inline">{% translate "Deine Uploads" %}</span>
+            <!-- NEU: neue Mitteilungen (freigegeben, zurückgeschickt ...) poppen bei «Deine Uploads» auf -->
+            {% if unread_notifications %}<span class="badge rounded-pill nav-count ms-1" title="{% translate "Neue Mitteilungen" %}">{{ unread_notifications }}</span>{% endif %}
         </a>
 
         {% if user.is_staff %}
             <!-- NEU: nur für den Admin, mit Zahl der offenen Dinge (aus guide/context_processors.py) -->
-            <a href="{% url 'moderation' %}" aria-label="Prüfen"
+            <a href="{% url 'moderation' %}" aria-label="{% translate "Prüfen" %}"
                class="{% if request.resolver_match.url_name == 'moderation' %}active{% endif %}">
-                <i class="bi bi-shield-check me-lg-2"></i><span class="d-none d-lg-inline">Prüfen</span>
-                {% if moderation_count %}<span class="badge rounded-pill bg-danger ms-1">{{ moderation_count }}</span>{% endif %}
+                <i class="bi bi-shield-check me-lg-2"></i><span class="d-none d-lg-inline">{% translate "Prüfen" %}</span>
+                {% if moderation_count %}<span class="badge rounded-pill nav-count ms-1">{{ moderation_count }}</span>{% endif %}
             </a>
         {% endif %}
     </div>
 
     <div class="nav-right">
-        <button class="language-button">DE / FR</button>
+        <!-- NEU: Sprache wechseln. Djangos set_language merkt sich die Wahl (Cookie) und lädt die gleiche Seite neu. -->
+        <form action="{% url 'set_language' %}" method="post" class="language-switch">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="de" lang="de" aria-label="Deutsch"
+                    class="language-button {% if LANGUAGE_CODE == 'de' %}is-active{% endif %}">DE</button>
+            <span aria-hidden="true">/</span>
+            <button type="submit" name="language" value="fr" lang="fr" aria-label="Français"
+                    class="language-button {% if LANGUAGE_CODE == 'fr' %}is-active{% endif %}">FR</button>
+        </form>
 
     {% if user.is_authenticated %}
         <!-- Eingeloggt: Profil mit Dropdown -->
         <div class="dropdown">
             <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                Profil
+                {% translate "Profil" %}
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><span class="dropdown-item-text text-muted small">{{ user.username }}</span></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#">Mein Profil</a></li>
-                <li><a class="dropdown-item" href="{% url 'my_uploads' %}">Deine Uploads</a></li>
-                <li><a class="dropdown-item" href="{% url 'add_activity' %}">Aktivität hinzufügen</a></li>
+                <li><a class="dropdown-item" href="{% url 'profile' %}">{% translate "Mein Profil" %}</a></li>
+                <li><a class="dropdown-item" href="{% url 'my_uploads' %}">{% translate "Deine Uploads" %}</a></li>
+                <li><a class="dropdown-item" href="{% url 'notifications' %}">{% translate "Mitteilungen" %}</a></li>
+                <li><a class="dropdown-item" href="{% url 'add_activity' %}">{% translate "Aktivität hinzufügen" %}</a></li>
                 {% if user.is_staff %}
                     <!-- nur für dich: Kontaktnachrichten, Meldungen und Besucherzähler im Admin -->
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{% url 'admin:guide_contactmessage_changelist' %}">Nachrichten</a></li>
-                    <li><a class="dropdown-item" href="{% url 'admin:guide_report_changelist' %}">Meldungen</a></li>
-                    <li><a class="dropdown-item" href="{% url 'admin:guide_visitcounter_changelist' %}">Besuche</a></li>
+                    <li><a class="dropdown-item" href="{% url 'admin:guide_contactmessage_changelist' %}">{% translate "Nachrichten" %}</a></li>
+                    <li><a class="dropdown-item" href="{% url 'admin:guide_report_changelist' %}">{% translate "Meldungen" %}</a></li>
+                    <li><a class="dropdown-item" href="{% url 'admin:guide_visitcounter_changelist' %}">{% translate "Besuche" %}</a></li>
                 {% endif %}
                 <li>
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
-                        <button type="submit" class="dropdown-item">Abmelden</button>
+                        <button type="submit" class="dropdown-item">{% translate "Abmelden" %}</button>
                     </form>
                 </li>
             </ul>
@@ -105,7 +117,7 @@
     {% else %}
         <!-- Nicht eingeloggt: Button öffnet das Pop-up -->
         <button type="button" class="login-btn" data-bs-toggle="modal" data-bs-target="#loginModal">
-            Login
+            {% translate "Login" %}
         </button>
     {% endif %}
 </div>
@@ -117,7 +129,7 @@
         {% for message in messages %}
             <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
                 {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Schliessen"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% translate "Schliessen" %}"></button>
             </div>
         {% endfor %}
 
@@ -130,30 +142,30 @@
             <div class="row g-4">
                 <div class="col-md-5">
                     <div class="footer-brand">Épinal Guide</div>
-                    <p class="footer-text">Aktivitäten, Orte und Tipps für Épinal, gesammelt von Leuten, die dort waren.</p>
+                    <p class="footer-text">{% translate "Aktivitäten, Orte und Tipps für Épinal, gesammelt von Leuten, die dort waren." %}</p>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="footer-title">Entdecken</div>
+                    <div class="footer-title">{% translate "Entdecken" %}</div>
                     <ul class="list-unstyled">
-                        <li><a href="{% url 'activities' %}">Aktivitäten</a></li>
-                        <li><a href="{% url 'favorites' %}">Favoriten</a></li>
-                        <li><a href="{% url 'my_uploads' %}">Deine Uploads</a></li>
-                        <li><a href="{% url 'add_activity' %}">Aktivität hinzufügen</a></li>
+                        <li><a href="{% url 'activities' %}">{% translate "Aktivitäten" %}</a></li>
+                        <li><a href="{% url 'favorites' %}">{% translate "Favoriten" %}</a></li>
+                        <li><a href="{% url 'my_uploads' %}">{% translate "Deine Uploads" %}</a></li>
+                        <li><a href="{% url 'add_activity' %}">{% translate "Aktivität hinzufügen" %}</a></li>
                     </ul>
                 </div>
                 <div class="col-6 col-md-4">
-                    <div class="footer-title">Über die Website</div>
+                    <div class="footer-title">{% translate "Über die Website" %}</div>
                     <ul class="list-unstyled">
-                        <li><a href="{% url 'about' %}">Über mich</a></li>
-                        <li><a href="{% url 'contact' %}">Kontakt</a></li>
-                        <li><a href="{% url 'contact' %}?topic=problem">Problem melden</a></li>
-                        <li><a href="{% url 'contact' %}?topic=tip">Tipp vorschlagen</a></li>
+                        <li><a href="{% url 'about' %}">{% translate "Über mich" %}</a></li>
+                        <li><a href="{% url 'contact' %}">{% translate "Kontakt" %}</a></li>
+                        <li><a href="{% url 'contact' %}?topic=problem">{% translate "Problem melden" %}</a></li>
+                        <li><a href="{% url 'contact' %}?topic=tip">{% translate "Tipp vorschlagen" %}</a></li>
                     </ul>
                 </div>
             </div>
             <div class="footer-bottom">
                 <span>© {% now "Y" %} Épinal Guide</span>
-                <span>Ein Projekt im Rahmen einer Maturaarbeit</span>
+                <span>{% translate "Ein Projekt im Rahmen einer Maturaarbeit" %}</span>
             </div>
         </div>
     </footer>
@@ -164,8 +176,8 @@
     <div class="modal-content">
 
       <div class="modal-header">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
-        <h5 class="modal-title ms-3" id="loginModalLabel">Anmelden</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Schliessen" %}"></button>
+        <h5 class="modal-title ms-3" id="loginModalLabel">{% translate "Anmelden" %}</h5>
       </div>
 
       <div class="modal-body">
@@ -178,21 +190,21 @@
     {% csrf_token %}
 
     <div class="mb-3">
-      <label for="modal_username" class="form-label">Benutzername oder E-Mail</label>
+      <label for="modal_username" class="form-label">{% translate "Benutzername oder E-Mail" %}</label>
       <input type="text" name="username" id="modal_username" class="form-control" autocomplete="username" required>
     </div>
 
     <div class="mb-3">
-      <label for="modal_password" class="form-label">Passwort</label>
+      <label for="modal_password" class="form-label">{% translate "Passwort" %}</label>
       <input type="password" name="password" id="modal_password" class="form-control" required>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100">Anmelden</button>
+    <button type="submit" class="btn btn-primary w-100">{% translate "Anmelden" %}</button>
   </form>
 
   <p class="text-center mt-3 mb-0">
-    Noch kein Konto?
-    <button type="button" id="showRegister" class="btn btn-link p-0 align-baseline">Registrieren</button>
+    {% translate "Noch kein Konto?" %}
+    <button type="button" id="showRegister" class="btn btn-link p-0 align-baseline">{% translate "Registrieren" %}</button>
   </p>
 </div>
 
@@ -204,32 +216,32 @@
             {% csrf_token %}
 
             <div class="mb-3">
-              <label for="reg_username" class="form-label">Benutzername</label>
+              <label for="reg_username" class="form-label">{% translate "Benutzername" %}</label>
               <input type="text" name="username" id="reg_username" class="form-control" required>
             </div>
 
             <div class="mb-3">
-              <label for="reg_email" class="form-label">E-Mail</label>
+              <label for="reg_email" class="form-label">{% translate "E-Mail" %}</label>
               <input type="email" name="email" id="reg_email" class="form-control" required>
             </div>
 
             <div class="mb-3">
-              <label for="reg_password1" class="form-label">Passwort</label>
+              <label for="reg_password1" class="form-label">{% translate "Passwort" %}</label>
               <input type="password" name="password1" id="reg_password1" class="form-control" required>
-              <div class="form-text">Mindestens 8 Zeichen.</div>
+              <div class="form-text">{% translate "Mindestens 8 Zeichen." %}</div>
             </div>
 
             <div class="mb-3">
-              <label for="reg_password2" class="form-label">Passwort wiederholen</label>
+              <label for="reg_password2" class="form-label">{% translate "Passwort wiederholen" %}</label>
               <input type="password" name="password2" id="reg_password2" class="form-control" required>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100">Registrieren</button>
+            <button type="submit" class="btn btn-primary w-100">{% translate "Registrieren" %}</button>
           </form>
 
           <p class="text-center mt-3 mb-0">
-            Schon ein Konto?
-            <button type="button" id="showLogin" class="btn btn-link p-0 align-baseline">Anmelden</button>
+            {% translate "Schon ein Konto?" %}
+            <button type="button" id="showLogin" class="btn btn-link p-0 align-baseline">{% translate "Anmelden" %}</button>
           </p>
         </div>
 
@@ -255,7 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const isLogin = pane === "login";
         loginPane.classList.toggle("d-none", !isLogin);
         registerPane.classList.toggle("d-none", isLogin);
-        title.textContent = isLogin ? "Anmelden" : "Konto erstellen";
+        title.textContent = isLogin ? "{% autoescape off %}{% filter escapejs %}{% translate 'Anmelden' %}{% endfilter %}{% endautoescape %}" : "{% autoescape off %}{% filter escapejs %}{% translate 'Konto erstellen' %}{% endfilter %}{% endautoescape %}";
     }
     document.getElementById("showRegister").addEventListener("click", () => show("register"));
     document.getElementById("showLogin").addEventListener("click", () => show("login"));
@@ -294,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 messages = Object.values(data.errors).flat();
             } catch (err) {
-                messages = ["Etwas ist schiefgelaufen. Bitte nochmals versuchen."];
+                messages = ["{% autoescape off %}{% filter escapejs %}{% translate 'Etwas ist schiefgelaufen. Bitte nochmals versuchen.' %}{% endfilter %}{% endautoescape %}"];
             }
 
             for (const message of messages) {
@@ -344,12 +356,13 @@ document.addEventListener("submit", async function (e) {
 
         button.classList.toggle("is-favorite", data.is_favorite);
         button.setAttribute("aria-pressed", data.is_favorite);
-        button.setAttribute("aria-label", data.is_favorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen");
-        // Herz austauschen (auf der Detailseite steht es in .fav-icon, auf den Karten direkt im Knopf)
-        const icon = button.querySelector(".fav-icon") || button;
-        icon.textContent = data.is_favorite ? "♥" : "♡";
+        button.setAttribute("aria-label", data.is_favorite ? "{% autoescape off %}{% filter escapejs %}{% translate 'Aus Favoriten entfernen' %}{% endfilter %}{% endautoescape %}" : "{% autoescape off %}{% filter escapejs %}{% translate 'Zu Favoriten hinzufügen' %}{% endfilter %}{% endautoescape %}");
+        // Herz-Symbol austauschen: ausgefüllt (bi-heart-fill) oder nur Umriss (bi-heart)
+        const icon = button.querySelector(".fav-icon");
+        icon.classList.toggle("bi-heart-fill", data.is_favorite);
+        icon.classList.toggle("bi-heart", !data.is_favorite);
         const text = button.querySelector(".fav-text");
-        if (text) text.textContent = data.is_favorite ? "Gespeichert" : "Speichern";
+        if (text) text.textContent = data.is_favorite ? "{% autoescape off %}{% filter escapejs %}{% translate 'Gespeichert' %}{% endfilter %}{% endautoescape %}" : "{% autoescape off %}{% filter escapejs %}{% translate 'Speichern' %}{% endfilter %}{% endautoescape %}";
 
         // Auf der Favoriten-Seite: Kachel oder Tabellenzeile entfernen, wenn das Herz weg ist
         if (!data.is_favorite && form.closest("[data-favorites-page]")) {

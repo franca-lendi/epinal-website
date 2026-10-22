@@ -1,30 +1,33 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Prüfen – Épinal Guide{% endblock %}
+{% block title %}{% translate "Prüfen" %} – Épinal Guide{% endblock %}
 
 {% block content %}
 <!-- NEU: nur für den Admin. Neue und gemeldete Aktivitäten freigeben, Kategorie-Vorschläge annehmen. -->
-<h1 class="mb-1">Prüfen</h1>
-<p class="text-muted mb-4">Neue Aktivitäten erscheinen erst, wenn du sie hier freigibst. Löschen oder ändern geht im
-    <a href="{% url 'admin:guide_activity_changelist' %}">Admin</a>.</p>
+<h1 class="mb-1">{% translate "Prüfen" %}</h1>
+<p class="text-muted mb-4">{% url 'admin:guide_activity_changelist' as admin_url %}{% blocktranslate trimmed %}Neue Aktivitäten erscheinen erst, wenn du sie hier freigibst. Löschen oder ändern geht im
+    <a href="{{ admin_url }}">Admin</a>.{% endblocktranslate %}</p>
 
-<h2 class="h4">Wartet auf Freigabe <span class="text-muted fs-6">({{ pending|length }})</span></h2>
+<h2 class="h4">{% translate "Wartet auf Freigabe" %} <span class="text-muted fs-6">({{ pending|length }})</span></h2>
 {% for activity in pending %}
     {% include "guide/_moderation_item.html" %}
 {% empty %}
-    <p class="text-muted">Nichts zu prüfen.</p>
+    <p class="text-muted">{% translate "Nichts zu prüfen." %}</p>
 {% endfor %}
 
-<h2 class="h4 mt-5">Gemeldet <span class="text-muted fs-6">({{ reported|length }})</span></h2>
-<p class="small text-muted">Gemeldet und deshalb ausgeblendet. Freigeben, wenn alles in Ordnung ist. Sonst im Admin löschen.</p>
+<h2 class="h4 mt-5">{% translate "Gemeldet" %} <span class="text-muted fs-6">({{ reported|length }})</span></h2>
+<p class="small text-muted">{% blocktranslate trimmed %}Gemeldet und deshalb ausgeblendet. Freigeben, wenn alles in Ordnung ist.
+    Zurückschicken, wenn die Person etwas ändern soll. Sonst im Admin löschen.{% endblocktranslate %}</p>
 {% for activity in reported %}
     {% include "guide/_moderation_item.html" with show_reports=True %}
 {% empty %}
-    <p class="text-muted">Keine Meldungen.</p>
+    <p class="text-muted">{% translate "Keine Meldungen." %}</p>
 {% endfor %}
 
-<h2 class="h4 mt-5">Fehler <span class="text-muted fs-6">({{ reports|length }})</span></h2>
-<p class="small text-muted">Die Aktivität ist weiterhin online. Korrigieren mit «Bearbeiten», danach «Erledigt».</p>
+<h2 class="h4 mt-5">{% translate "Fehler" %} <span class="text-muted fs-6">({{ reports|length }})</span></h2>
+<p class="small text-muted">{% blocktranslate trimmed %}Die Aktivität ist weiterhin online. Selbst korrigieren mit «Bearbeiten» und danach «Erledigt»,
+    oder «Zurückschicken»: Dann bekommt die Person, die sie hinzugefügt hat, den Fehler als Mitteilung.{% endblocktranslate %}</p>
 {% for report in reports %}
     <div class="moderation-item">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
@@ -32,47 +35,68 @@
                 <a href="{% url 'activity_detail' report.activity.pk %}" class="fw-bold text-decoration-none">{{ report.activity.title }}</a>
                 <div class="mt-1">
                     {% if report.reason == "error" %}
-                        <span class="badge text-bg-warning"><i class="bi bi-pencil-square me-1"></i>Fehler</span>
+                        <span class="badge text-bg-warning"><i class="bi bi-pencil-square me-1"></i>{% translate "Fehler" %}</span>
                     {% else %}
                         <span class="badge text-bg-danger"><i class="bi bi-flag me-1"></i>{{ report.get_reason_display }}</span>
                     {% endif %}
                 </div>
                 {% if report.description %}<p class="small mb-0 mt-1">«{{ report.description }}»</p>{% endif %}
-                <div class="small text-muted mt-1">von {{ report.user.username }} · {{ report.created_at|date:"j. F Y, H:i" }}</div>
+                <div class="small text-muted mt-1">{% blocktranslate with user=report.user.username %}von {{ user }}{% endblocktranslate %} · {{ report.created_at|date:"j. F Y, H:i" }}</div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'edit_activity' report.activity.pk %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-pencil me-1"></i>Bearbeiten
+                    <i class="bi bi-pencil me-1"></i>{% translate "Bearbeiten" %}
                 </a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse"
+                        data-bs-target="#returnReport{{ report.pk }}" aria-expanded="false">
+                    <i class="bi bi-arrow-return-left me-1"></i>{% translate "Zurückschicken" %}
+                </button>
                 <form method="post" action="{% url 'resolve_report' report.pk %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Erledigt</button>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>{% translate "Erledigt" %}</button>
                 </form>
             </div>
         </div>
-    </div>
-{% empty %}
-    <p class="text-muted">Keine Fehler gemeldet.</p>
-{% endfor %}
-
-<h2 class="h4 mt-5">Vorschläge für Kategorien <span class="text-muted fs-6">({{ suggestions|length }})</span></h2>
-<p class="small text-muted">Kam bei «Keine passt? Eigene hinzufügen» dazu. Freigeben = erscheint im Filter und beim Hinzufügen.
-    Umbenennen geht im <a href="{% url 'admin:guide_category_changelist' %}?approved__exact=0">Admin</a>.</p>
-{% for category in suggestions %}
-    <div class="moderation-item d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-            <strong>{{ category.name }}</strong>
-            <span class="text-muted small">
-                {% if category.parent %}in {{ category.parent.name }}{% else %}neue Hauptkategorie{% endif %}
-                · {{ category.activity_count }} Aktivität{{ category.activity_count|pluralize:"en" }}
-            </span>
-        </div>
-        <form method="post" action="{% url 'approve_category' category.pk %}">
+        <!-- NEU: Fehler an die Person schicken, die die Aktivität hinzugefügt hat -->
+        <form method="post" action="{% url 'return_report' report.pk %}" class="collapse mt-3" id="returnReport{{ report.pk }}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+            <label for="returnReportText{{ report.pk }}" class="form-label small mb-1">
+                {% blocktranslate trimmed with user=report.activity.user.username %}{{ user }} bekommt den gemeldeten Fehler als Mitteilung. Möchtest du noch etwas dazuschreiben? (optional){% endblocktranslate %}
+            </label>
+            <textarea name="message" id="returnReportText{{ report.pk }}" class="form-control form-control-sm" rows="2"></textarea>
+            <button type="submit" class="btn btn-dark btn-sm mt-2"><i class="bi bi-send me-1"></i>{% translate "Zurückschicken" %}</button>
         </form>
     </div>
 {% empty %}
-    <p class="text-muted">Keine Vorschläge.</p>
+    <p class="text-muted">{% translate "Keine Fehler gemeldet." %}</p>
+{% endfor %}
+
+<h2 class="h4 mt-5">{% translate "Vorschläge für Kategorien" %} <span class="text-muted fs-6">({{ suggestions|length }})</span></h2>
+<p class="small text-muted">{% url 'admin:guide_category_changelist' as category_admin_url %}{% blocktranslate trimmed %}Kam bei «Keine passt? Eigene hinzufügen» dazu. Freigeben = erscheint im Filter und beim Hinzufügen.
+    Verwerfen = die Aktivitäten stehen dann unter der Hauptkategorie, und die Person bekommt eine Mitteilung.
+    Umbenennen geht im <a href="{{ category_admin_url }}?approved__exact=0">Admin</a>.{% endblocktranslate %}</p>
+{% for category in suggestions %}
+    <div class="moderation-item d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <strong>{{ category.display_name }}</strong>
+            <span class="text-muted small">
+                {% if category.parent %}{% blocktranslate with parent=category.parent.display_name %}in {{ parent }}{% endblocktranslate %}{% else %}{% translate "neue Hauptkategorie" %}{% endif %}
+                · {% blocktranslate trimmed count counter=category.activity_count %}{{ counter }} Aktivität{% plural %}{{ counter }} Aktivitäten{% endblocktranslate %}
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <!-- NEU: Verwerfen. Die Aktivitäten bekommen die Hauptkategorie, die Person eine Mitteilung. -->
+            <form method="post" action="{% url 'reject_category' category.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>{% translate "Verwerfen" %}</button>
+            </form>
+            <form method="post" action="{% url 'approve_category' category.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>{% translate "Freigeben" %}</button>
+            </form>
+        </div>
+    </div>
+{% empty %}
+    <p class="text-muted">{% translate "Keine Vorschläge." %}</p>
 {% endfor %}
 {% endblock %}

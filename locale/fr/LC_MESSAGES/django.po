@@ -1,0 +1,1961 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Epinal Guide\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-23 00:08+0200\n"
+"PO-Revision-Date: 2026-10-22 23:40+0200\n"
+"Last-Translator: Épinal Guide\n"
+"Language-Team: Français\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: guide/bus.py:51
+msgid "Mit dem Bus"
+msgstr "En bus"
+
+#: guide/bus.py:52
+msgid "Zu Fuss"
+msgstr "À pied"
+
+#: guide/bus.py:53
+msgid "Velo"
+msgstr "Vélo"
+
+#: guide/forms.py:28 guide/forms.py:55
+msgid "Der Benutzername darf kein @ enthalten."
+msgstr "Le nom d’utilisateur ne doit pas contenir de @."
+
+#: guide/forms.py:34 guide/forms.py:61
+msgid "Diese E-Mail ist schon registriert."
+msgstr "Cette adresse e-mail est déjà enregistrée."
+
+#: guide/forms.py:43 guide/templates/guide/base.html:219
+#: guide/templates/registration/login.html:18
+msgid "Benutzername"
+msgstr "Nom d’utilisateur"
+
+#: guide/forms.py:43 guide/templates/guide/about.html:39
+#: guide/templates/guide/base.html:224
+msgid "E-Mail"
+msgstr "E-mail"
+
+#: guide/forms.py:44
+msgid "Bei Bewertungen erscheinen nur die ersten Buchstaben, z.B. fr***."
+msgstr ""
+"Dans les avis, seules les premières lettres apparaissent, p. ex. fr***."
+
+#: guide/forms.py:68 guide/templates/guide/_address_picker.html:17
+msgid "Adresse"
+msgstr "Adresse"
+
+#: guide/forms.py:69 guide/templates/guide/_address_picker.html:34
+msgid "PLZ"
+msgstr "Code postal"
+
+#: guide/forms.py:70 guide/templates/guide/_activity_table.html:11
+#: guide/templates/guide/_address_picker.html:39
+#: guide/templates/guide/my_uploads.html:59
+msgid "Ort"
+msgstr "Ville"
+
+#: guide/forms.py:88 guide/templates/guide/_activity_table.html:8
+#: guide/templates/guide/my_uploads.html:58
+msgid "Name"
+msgstr "Nom"
+
+#: guide/forms.py:89
+msgid "Beschreibung"
+msgstr "Description"
+
+#: guide/forms.py:90 guide/templates/guide/_activity_table.html:12
+#: guide/templates/guide/activities.html:138
+msgid "Preis"
+msgstr "Prix"
+
+#: guide/forms.py:91
+msgid "Dauer in Minuten"
+msgstr "Durée en minutes"
+
+#: guide/forms.py:92
+msgid "Datum (nur bei Events)"
+msgstr "Date (seulement pour les événements)"
+
+#: guide/forms.py:93 guide/templates/guide/activity_detail.html:193
+msgid "Website"
+msgstr "Site web"
+
+#: guide/forms.py:94
+msgid "Telefonnummer"
+msgstr "Numéro de téléphone"
+
+#: guide/forms.py:95
+msgid "E-Mail-Adresse"
+msgstr "Adresse e-mail"
+
+#: guide/forms.py:96
+msgid "Bemerkung"
+msgstr "Remarque"
+
+#: guide/forms.py:97 guide/templates/guide/activity_detail.html:213
+msgid "So kommst du hin"
+msgstr "Comment y aller"
+
+#: guide/forms.py:100
+msgid "Ungefähr, pro Person."
+msgstr "Environ, par personne."
+
+#: guide/forms.py:101
+msgid ""
+"Die nächsten Bushaltestellen und die Route zeigen wir automatisch an. "
+"Schreib hier nur, was man sonst noch wissen muss."
+msgstr ""
+"Les arrêts de bus les plus proches et l’itinéraire s’affichent "
+"automatiquement. Écris ici seulement ce qu’il faut savoir en plus."
+
+#: guide/forms.py:107
+msgid "Was kann man hier machen? Was ist speziell?"
+msgstr "Qu’est-ce qu’on peut faire ici ? Qu’est-ce qui est spécial ?"
+
+#: guide/forms.py:111
+msgid "z.B. an Feiertagen geschlossen, im Winter nur bis 17:00"
+msgstr "p. ex. fermé les jours fériés, en hiver seulement jusqu’à 17h00"
+
+#: guide/forms.py:117
+msgid "z.B. Eingang hinter dem Parkplatz, letzter Bus fährt um 20:00"
+msgstr "p. ex. entrée derrière le parking, dernier bus à 20h00"
+
+#: guide/forms.py:130
+msgid "Bitte wähle einen Preis."
+msgstr "Choisis un prix, s’il te plaît."
+
+#: guide/forms.py:140
+msgid "Fotos"
+msgstr "Photos"
+
+#: guide/forms.py:141
+#, python-format
+msgid ""
+"Du kannst mehrmals Fotos auswählen (höchstens %(max)s auf einmal). Mit «Als "
+"Titelbild» bestimmst du das Titelbild. Bitte nur eigene Fotos."
+msgstr ""
+"Tu peux choisir des photos plusieurs fois (%(max)s au maximum à la fois). "
+"Avec « Photo principale », tu choisis la photo principale. Seulement tes "
+"propres photos, s’il te plaît."
+
+#: guide/forms.py:218
+msgid "Immer offen (24/7)"
+msgstr "Toujours ouvert (24h/24, 7j/7)"
+
+#: guide/forms.py:224 guide/models.py:178
+#: guide/templates/guide/_opening_hours.html:36
+msgid "geschlossen"
+msgstr "fermé"
+
+#: guide/forms.py:228
+msgid "von"
+msgstr "de"
+
+#: guide/forms.py:228
+msgid "bis"
+msgstr "à"
+
+#: guide/forms.py:273
+#, python-format
+msgid "%(day)s: Beginn und Ende sind gleich."
+msgstr "%(day)s : le début et la fin sont identiques."
+
+#: guide/forms.py:277
+#, python-format
+msgid "%(day)s: bitte Beginn und Ende angeben."
+msgstr "%(day)s : indique le début et la fin, s’il te plaît."
+
+#: guide/forms.py:305
+msgid "Kategorie wählen"
+msgstr "Choisir une catégorie"
+
+#: guide/forms.py:306 guide/templates/guide/_category_picker.html:44
+msgid "Vorschlag"
+msgstr "proposition"
+
+#: guide/forms.py:308
+msgid "+ Keine passt? Eigene hinzufügen"
+msgstr "+ Aucune ne convient ? Ajoute la tienne"
+
+#: guide/forms.py:314 guide/templates/guide/_activity_table.html:10
+#: guide/templates/guide/activities.html:55
+#: guide/templates/guide/my_uploads.html:59
+msgid "Kategorie"
+msgstr "Catégorie"
+
+#: guide/forms.py:314
+#, python-format
+msgid "%(n)s. Kategorie"
+msgstr "%(n)se catégorie"
+
+#: guide/forms.py:315
+msgid "Bitte wähle eine Kategorie."
+msgstr "Choisis une catégorie, s’il te plaît."
+
+#: guide/forms.py:323
+msgid "Was fehlt?"
+msgstr "Qu’est-ce qui manque ?"
+
+#: guide/forms.py:324
+msgid "Wir schauen uns deinen Vorschlag an und nehmen ihn in die Liste auf."
+msgstr "Nous regardons ta proposition et l’ajoutons à la liste."
+
+#: guide/forms.py:325
+msgid "z.B. Rudern, Bäckerei …"
+msgstr "p. ex. aviron, boulangerie …"
+
+#: guide/forms.py:360 guide/templates/guide/add_activity.html:132
+msgid ""
+"Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte."
+msgstr ""
+"Choisis une adresse dans les propositions ou clique sur la carte, s’il te "
+"plaît."
+
+#: guide/forms.py:368 guide/templates/guide/add_activity.html:134
+msgid "Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht."
+msgstr ""
+"Ajoute une photo, s’il te plaît, pour qu’on voie à quoi ressemble l’endroit."
+
+#: guide/forms.py:384 guide/forms.py:402
+msgid "Schreib kurz, was fehlt."
+msgstr "Écris en quelques mots ce qui manque."
+
+#: guide/forms.py:389
+msgid "Diese Kategorie hast du schon gewählt."
+msgstr "Tu as déjà choisi cette catégorie."
+
+#: guide/forms.py:438
+#, python-format
+msgid "Höchstens %(max)s Fotos auf einmal."
+msgstr "%(max)s photos au maximum à la fois."
+
+#: guide/forms.py:441
+#, python-format
+msgid "%(name)s ist grösser als 10 MB."
+msgstr "%(name)s dépasse 10 Mo."
+
+#: guide/forms.py:446 guide/templates/guide/add_activity.html:79
+msgid "Fotos auswählen"
+msgstr "Choisir des photos"
+
+#: guide/forms.py:474
+msgid "Wie würdest du deine Erfahrung bewerten?"
+msgstr "Comment évaluerais-tu ton expérience ?"
+
+#: guide/forms.py:478
+msgid "Bitte wähle 1 bis 5 Sterne."
+msgstr "Choisis de 1 à 5 étoiles, s’il te plaît."
+
+#: guide/forms.py:480
+msgid "Wann warst du dort?"
+msgstr "Quand y es-tu allé·e ?"
+
+#: guide/forms.py:482
+msgid "Titel deiner Bewertung"
+msgstr "Titre de ton avis"
+
+#: guide/forms.py:485
+msgid "Wie würdest du deine Erfahrung zusammenfassen?"
+msgstr "Comment résumerais-tu ton expérience ?"
+
+#: guide/forms.py:488
+msgid "Schreib deine Bewertung"
+msgstr "Écris ton avis"
+
+#: guide/forms.py:491
+msgid "Teile deine Erfahrung ..."
+msgstr "Partage ton expérience …"
+
+#: guide/forms.py:493 guide/templates/guide/activity_detail.html:140
+#: guide/templates/guide/activity_detail.html:300
+msgid "Fotos hinzufügen"
+msgstr "Ajouter des photos"
+
+#: guide/forms.py:495
+msgid ""
+"Ich bestätige, dass diese Bewertung auf meiner eigenen Erfahrung beruht und "
+"ehrlich ist."
+msgstr ""
+"Je confirme que cet avis repose sur ma propre expérience et qu’il est "
+"honnête."
+
+#: guide/forms.py:496
+msgid "Bitte bestätige das Kästchen."
+msgstr "Coche la case, s’il te plaît."
+
+#: guide/forms.py:526
+msgid "Grund"
+msgstr "Raison"
+
+#: guide/forms.py:527
+msgid "Was genau?"
+msgstr "Quoi exactement ?"
+
+#: guide/forms.py:537
+msgid "Was ist falsch? (z.B. Adresse, Öffnungszeiten, Preis)"
+msgstr "Qu’est-ce qui est faux ? (p. ex. adresse, horaires, prix)"
+
+#: guide/forms.py:542
+msgid "Was genau? (freiwillig)"
+msgstr "Quoi exactement ? (facultatif)"
+
+#: guide/forms.py:561
+msgid "Leere Zeile = neuer Absatz."
+msgstr "Ligne vide = nouveau paragraphe."
+
+#: guide/forms.py:562
+msgid ""
+"Erscheint auf der Kontaktseite. Leer lassen, wenn du sie nicht zeigen "
+"willst."
+msgstr ""
+"Apparaît sur la page de contact. Laisse vide si tu ne veux pas l’afficher."
+
+#: guide/forms.py:581
+msgid "Dein Name"
+msgstr "Ton nom"
+
+#: guide/forms.py:582
+msgid "Deine E-Mail"
+msgstr "Ton e-mail"
+
+#: guide/forms.py:583
+msgid "Worum geht es?"
+msgstr "De quoi s’agit-il ?"
+
+#: guide/forms.py:584
+msgid "Nachricht"
+msgstr "Message"
+
+#: guide/forms.py:587
+msgid "Meine Antwort kommt per E-Mail an diese Adresse."
+msgstr "Ma réponse arrivera par e-mail à cette adresse."
+
+#: guide/forms.py:601
+msgid "Spam erkannt."
+msgstr "Spam détecté."
+
+#: guide/models.py:57
+msgid "Mo"
+msgstr "Lu"
+
+#: guide/models.py:57
+msgid "Montag"
+msgstr "lundi"
+
+#: guide/models.py:58
+msgid "Di"
+msgstr "Ma"
+
+#: guide/models.py:58
+msgid "Dienstag"
+msgstr "mardi"
+
+#: guide/models.py:59
+msgid "Mi"
+msgstr "Me"
+
+#: guide/models.py:59
+msgid "Mittwoch"
+msgstr "mercredi"
+
+#: guide/models.py:60
+msgid "Do"
+msgstr "Je"
+
+#: guide/models.py:60
+msgid "Donnerstag"
+msgstr "jeudi"
+
+#: guide/models.py:61
+msgid "Fr"
+msgstr "Ve"
+
+#: guide/models.py:61
+msgid "Freitag"
+msgstr "vendredi"
+
+#: guide/models.py:62
+msgid "Sa"
+msgstr "Sa"
+
+#: guide/models.py:62
+msgid "Samstag"
+msgstr "samedi"
+
+#: guide/models.py:63
+msgid "So"
+msgstr "Di"
+
+#: guide/models.py:63
+msgid "Sonntag"
+msgstr "dimanche"
+
+#: guide/models.py:76
+msgid "Gratis"
+msgstr "Gratuit"
+
+#: guide/models.py:77 guide/views.py:143
+msgid "bis 10 €"
+msgstr "jusqu’à 10 €"
+
+#: guide/models.py:78
+msgid "10–20 €"
+msgstr "10–20 €"
+
+#: guide/models.py:79
+msgid "20–30 €"
+msgstr "20–30 €"
+
+#: guide/models.py:80
+msgid "30–50 €"
+msgstr "30–50 €"
+
+#: guide/models.py:81
+msgid "50–100 €"
+msgstr "50–100 €"
+
+#: guide/models.py:82
+msgid "über 100 €"
+msgstr "plus de 100 €"
+
+#: guide/models.py:88 guide/templates/guide/_status_badge.html:3
+msgid "Veröffentlicht"
+msgstr "Publié"
+
+#: guide/models.py:89 guide/templates/guide/_status_badge.html:11
+msgid "Entwurf"
+msgstr "Brouillon"
+
+#: guide/models.py:90 guide/templates/guide/_status_badge.html:7
+msgid "In Prüfung"
+msgstr "En vérification"
+
+#: guide/models.py:91 guide/templates/guide/_status_badge.html:5
+#: guide/templates/guide/activity_detail.html:17
+#: guide/templates/guide/moderation.html:12
+msgid "Wartet auf Freigabe"
+msgstr "En attente de validation"
+
+#: guide/models.py:92 guide/templates/guide/_status_badge.html:9
+msgid "Zurückgeschickt"
+msgstr "Renvoyé"
+
+#: guide/models.py:168
+msgid "Mo–So"
+msgstr "Lu–Di"
+
+#: guide/models.py:168
+msgid "24 Stunden offen"
+msgstr "Ouvert 24h/24"
+
+#: guide/models.py:264
+msgid "Unangemessen"
+msgstr "Inapproprié"
+
+#: guide/models.py:265
+msgid "Spam"
+msgstr "Spam"
+
+#: guide/models.py:266
+msgid "Fehler / falsche Info"
+msgstr "Erreur / info fausse"
+
+#: guide/models.py:267 guide/models.py:328
+msgid "Anderes"
+msgstr "Autre"
+
+#: guide/models.py:325
+msgid "Frage"
+msgstr "Question"
+
+#: guide/models.py:326
+msgid "Tipp für eine Aktivität"
+msgstr "Idée d’activité"
+
+#: guide/models.py:327
+msgid "Problem mit der Website melden"
+msgstr "Signaler un problème avec le site"
+
+#: guide/templates/guide/_activity_card.html:13
+msgid "Kein Bild vorhanden"
+msgstr "Pas d’image disponible"
+
+#: guide/templates/guide/_activity_card.html:28
+#, python-format
+msgid "%(distance)s entfernt"
+msgstr "à %(distance)s"
+
+#: guide/templates/guide/_activity_card.html:33
+#: guide/templates/guide/activity_detail.html:191
+#: guide/templates/guide/my_uploads.html:72
+#: guide/templates/guide/my_uploads.html:141
+#, python-format
+msgid "%(minutes)s Min."
+msgstr "%(minutes)s min"
+
+#: guide/templates/guide/_activity_card.html:39
+#, python-format
+msgid "%(rating)s von 5"
+msgstr "%(rating)s sur 5"
+
+#: guide/templates/guide/_activity_card.html:43
+#: guide/templates/guide/_activity_map.html:46
+#: guide/templates/guide/activity_detail.html:62
+#: guide/templates/guide/my_uploads.html:140
+msgid "Noch keine Bewertung"
+msgstr "Pas encore d’avis"
+
+#: guide/templates/guide/_activity_card.html:47
+msgid "Mehr erfahren"
+msgstr "En savoir plus"
+
+#: guide/templates/guide/_activity_map.html:50
+msgid "Nicht auf der Karte (keine genaue Adresse)"
+msgstr "Pas sur la carte (pas d’adresse précise)"
+
+#: guide/templates/guide/_activity_map.html:74
+msgid ""
+"&copy; <a "
+"href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>-Mitwirkende"
+msgstr ""
+"&copy; Contributeurs <a "
+"href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+
+#: guide/templates/guide/_activity_table.html:13
+#: guide/templates/guide/activities.html:109
+msgid "Datum"
+msgstr "Date"
+
+#: guide/templates/guide/_activity_table.html:14
+#: guide/templates/guide/my_uploads.html:60
+msgid "Bewertung"
+msgstr "Avis"
+
+#: guide/templates/guide/_activity_table.html:15
+msgid "Favorit"
+msgstr "Favori"
+
+#: guide/templates/guide/_address_picker.html:23
+msgid "z.B. 2 Faubourg de Poissompré"
+msgstr "p. ex. 2 Faubourg de Poissompré"
+
+#: guide/templates/guide/_address_picker.html:29
+msgid ""
+"Tippe die Adresse und wähle einen Vorschlag. Oder klicke auf die Karte."
+msgstr "Tape l’adresse et choisis une proposition. Ou clique sur la carte."
+
+#: guide/templates/guide/_address_picker.html:46
+msgid "Karte zum Auswählen des Ortes"
+msgstr "Carte pour choisir le lieu"
+
+#: guide/templates/guide/_address_picker.html:47
+msgid "Noch kein Ort gewählt."
+msgstr "Aucun lieu choisi pour l’instant."
+
+#: guide/templates/guide/_address_picker.html:62
+#, python-format
+msgid "%(link)s-Mitwirkende"
+msgstr "Contributeurs %(link)s"
+
+#: guide/templates/guide/_address_picker.html:63
+msgid ""
+"Ort gewählt. Du kannst die Nadel verschieben, falls sie nicht ganz stimmt."
+msgstr ""
+"Lieu choisi. Tu peux déplacer l’épingle si elle n’est pas tout à fait juste."
+
+#: guide/templates/guide/_address_picker.html:64
+msgid "Wähle einen Vorschlag."
+msgstr "Choisis une proposition."
+
+#: guide/templates/guide/_address_picker.html:65
+msgid "Keine Adresse gefunden. Du kannst auch auf die Karte klicken."
+msgstr "Aucune adresse trouvée. Tu peux aussi cliquer sur la carte."
+
+#: guide/templates/guide/_address_picker.html:66
+msgid ""
+"Adresssuche gerade nicht erreichbar. Tippe die Adresse von Hand und klicke "
+"den Ort auf der Karte an."
+msgstr ""
+"La recherche d’adresse n’est pas disponible pour le moment. Tape l’adresse à"
+" la main et clique sur le lieu sur la carte."
+
+#: guide/templates/guide/_address_picker.html:67
+msgid "Wähle einen Vorschlag oder klicke auf die Karte."
+msgstr "Choisis une proposition ou clique sur la carte."
+
+#: guide/templates/guide/_category_picker.html:12
+#: guide/templates/guide/_field.html:5
+msgid "optional"
+msgstr "facultatif"
+
+#: guide/templates/guide/_category_picker.html:17
+msgid "Kategorie entfernen"
+msgstr "Retirer la catégorie"
+
+#: guide/templates/guide/_category_picker.html:27
+msgid "Genauer?"
+msgstr "Plus précis ?"
+
+#: guide/templates/guide/_category_picker.html:27
+msgid "mehrere möglich"
+msgstr "plusieurs possibles"
+
+#: guide/templates/guide/_category_picker.html:32
+msgid "Nein, allgemein"
+msgstr "Non, en général"
+
+#: guide/templates/guide/_category_picker.html:40
+msgid "Keine passt? Eigene hinzufügen"
+msgstr "Aucune ne convient ? Ajoute la tienne"
+
+#: guide/templates/guide/_category_picker.html:64
+msgid "Weitere Kategorie"
+msgstr "Autre catégorie"
+
+#: guide/templates/guide/_fav_button.html:10
+#: guide/templates/guide/base.html:359
+msgid "Aus Favoriten entfernen"
+msgstr "Retirer des favoris"
+
+#: guide/templates/guide/_fav_button.html:10
+#: guide/templates/guide/base.html:359
+msgid "Zu Favoriten hinzufügen"
+msgstr "Ajouter aux favoris"
+
+#: guide/templates/guide/_fav_button.html:16
+msgid "Zum Speichern anmelden"
+msgstr "Connecte-toi pour enregistrer"
+
+#: guide/templates/guide/_moderation_item.html:11
+#: guide/templates/guide/moderation.html:44
+#, python-format
+msgid "von %(user)s"
+msgstr "par %(user)s"
+
+#: guide/templates/guide/_moderation_item.html:25
+#: guide/templates/guide/my_uploads.html:126
+#: guide/templates/guide/my_uploads.html:214
+#: guide/templates/guide/notifications.html:16
+msgid "Ansehen"
+msgstr "Voir"
+
+#: guide/templates/guide/_moderation_item.html:29
+#: guide/templates/guide/_moderation_item.html:44
+#: guide/templates/guide/moderation.html:52
+#: guide/templates/guide/moderation.html:67
+msgid "Zurückschicken"
+msgstr "Renvoyer"
+
+#: guide/templates/guide/_moderation_item.html:33
+#: guide/templates/guide/activity_detail.html:23
+#: guide/templates/guide/moderation.html:95
+msgid "Freigeben"
+msgstr "Valider"
+
+#: guide/templates/guide/_moderation_item.html:40
+#, python-format
+msgid "Was soll %(user)s ändern? Das bekommt die Person als Mitteilung."
+msgstr "Que doit changer %(user)s ? La personne le reçoit comme notification."
+
+#: guide/templates/guide/_moderation_item.html:43
+msgid "z.B. Das Foto zeigt nicht den Ort. Bitte ein eigenes Foto hochladen."
+msgstr ""
+"p. ex. La photo ne montre pas le lieu. Merci de mettre ta propre photo."
+
+#: guide/templates/guide/_opening_hours.html:13
+msgid ""
+"Gib zuerst einen Tag ein, die Zeiten werden für die anderen Tage übernommen."
+" Danach kannst du jeden Tag einzeln anpassen."
+msgstr ""
+"Remplis d’abord un jour, les horaires seront repris pour les autres jours. "
+"Ensuite, tu peux adapter chaque jour."
+
+#: guide/templates/guide/_opening_hours.html:25
+msgid "Pause entfernen"
+msgstr "Retirer la pause"
+
+#: guide/templates/guide/_opening_hours.html:30
+msgid "Mit Pause"
+msgstr "Avec pause"
+
+#: guide/templates/guide/_status_badge.html:5
+msgid "Wird geprüft und erscheint innerhalb von 24 Stunden"
+msgstr "En cours de vérification, apparaît dans les 24 heures"
+
+#: guide/templates/guide/_status_badge.html:7
+msgid "Wurde gemeldet und ist ausgeblendet, bis sie geprüft ist"
+msgstr "A été signalé et reste masqué jusqu’à la vérification"
+
+#: guide/templates/guide/_status_badge.html:9
+msgid "Zurückgeschickt: bitte überarbeiten und nochmals senden"
+msgstr "Renvoyé : merci de retravailler et de renvoyer"
+
+#: guide/templates/guide/_view_switch.html:8
+msgid "Ansicht"
+msgstr "Affichage"
+
+#: guide/templates/guide/_view_switch.html:12
+msgid "Kacheln"
+msgstr "Vignettes"
+
+#: guide/templates/guide/_view_switch.html:18
+msgid "Tabelle"
+msgstr "Tableau"
+
+#: guide/templates/guide/_view_switch.html:24
+msgid "Karte"
+msgstr "Carte"
+
+#: guide/templates/guide/about.html:4 guide/templates/guide/base.html:36
+#: guide/templates/guide/base.html:159
+msgid "Über mich"
+msgstr "À propos de moi"
+
+#: guide/templates/guide/about.html:15
+#: guide/templates/guide/activity_detail.html:88
+#: guide/templates/guide/moderation.html:48
+#: guide/templates/guide/my_uploads.html:74
+#: guide/templates/guide/my_uploads.html:127
+#: guide/templates/guide/my_uploads.html:147
+msgid "Bearbeiten"
+msgstr "Modifier"
+
+#: guide/templates/guide/about.html:25 guide/templates/guide/contact.html:18
+#, python-format
+msgid "Foto von %(name)s"
+msgstr "Photo de %(name)s"
+
+#: guide/templates/guide/about.html:25 guide/templates/guide/contact.html:18
+msgid "Foto von mir"
+msgstr "Photo de moi"
+
+#: guide/templates/guide/about.html:33
+msgid "Noch kein Name. Klick oben auf «Bearbeiten»."
+msgstr "Pas encore de nom. Clique en haut sur « Modifier »."
+
+#: guide/templates/guide/about.html:41
+msgid "Weiterer Link"
+msgstr "Autre lien"
+
+#: guide/templates/guide/about.html:55 guide/templates/guide/activities.html:4
+#: guide/templates/guide/base.html:44 guide/templates/guide/base.html:50
+#: guide/templates/guide/base.html:150
+msgid "Aktivitäten"
+msgstr "Activités"
+
+#: guide/templates/guide/about.html:61
+#: guide/templates/guide/activity_detail.html:158
+msgid "Bewertungen"
+msgstr "Avis"
+
+#: guide/templates/guide/about.html:67
+msgid "Kategorien"
+msgstr "Catégories"
+
+#: guide/templates/guide/about.html:73
+msgid "Besucher:innen"
+msgstr "Visiteurs·euses"
+
+#: guide/templates/guide/about.html:79 guide/templates/guide/favorites.html:22
+msgid "Aktivitäten entdecken"
+msgstr "Découvrir les activités"
+
+#: guide/templates/guide/about.html:80
+msgid "Schreib mir"
+msgstr "Écris-moi"
+
+#: guide/templates/guide/about_edit.html:4
+#: guide/templates/guide/about_edit.html:9
+msgid "Über mich bearbeiten"
+msgstr "Modifier « À propos de moi »"
+
+#: guide/templates/guide/about_edit.html:10
+msgid ""
+"Nur du als Admin siehst diese Seite. Kontaktdaten erscheinen auch auf der "
+"Kontaktseite."
+msgstr ""
+"Seul·e toi, en tant qu’admin, vois cette page. Les coordonnées apparaissent "
+"aussi sur la page de contact."
+
+#: guide/templates/guide/about_edit.html:19
+msgid "Aktuelles Foto"
+msgstr "Photo actuelle"
+
+#: guide/templates/guide/about_edit.html:22
+msgid "Vorschau"
+msgstr "Aperçu"
+
+#: guide/templates/guide/about_edit.html:36 guide/templates/guide/base.html:37
+#: guide/templates/guide/base.html:160 guide/templates/guide/contact.html:4
+#: guide/templates/guide/contact.html:13
+msgid "Kontakt"
+msgstr "Contact"
+
+#: guide/templates/guide/about_edit.html:42
+#: guide/templates/guide/activity_detail.html:307
+#: guide/templates/guide/activity_detail.html:329
+#: guide/templates/guide/activity_detail.html:354
+#: guide/templates/guide/my_uploads.html:193
+msgid "Abbrechen"
+msgstr "Annuler"
+
+#: guide/templates/guide/about_edit.html:43
+#: guide/templates/guide/activity_detail.html:78
+#: guide/templates/guide/activity_detail.html:83
+#: guide/templates/guide/add_activity.html:118
+#: guide/templates/guide/base.html:365 guide/templates/guide/profile.html:34
+msgid "Speichern"
+msgstr "Enregistrer"
+
+#: guide/templates/guide/activities.html:31
+msgid "Suche nach Aktivitäten, Orten …"
+msgstr "Chercher des activités, des lieux …"
+
+#: guide/templates/guide/activities.html:32
+msgid "Suche nach Aktivitäten"
+msgstr "Chercher des activités"
+
+#: guide/templates/guide/activities.html:34
+msgid "Suchen"
+msgstr "Chercher"
+
+#: guide/templates/guide/activities.html:39
+#: guide/templates/guide/my_uploads.html:99
+msgid "Füge deine Aktivität hinzu"
+msgstr "Ajoute ton activité"
+
+#: guide/templates/guide/activities.html:76
+#, python-format
+msgid "Unterkategorien von %(name)s zeigen"
+msgstr "Afficher les sous-catégories de %(name)s"
+
+#: guide/templates/guide/activities.html:115
+msgid "Von"
+msgstr "Du"
+
+#: guide/templates/guide/activities.html:120
+msgid "Bis"
+msgstr "Au"
+
+#: guide/templates/guide/activities.html:124
+msgid "Aktivitäten ohne festes Datum werden immer angezeigt."
+msgstr "Les activités sans date fixe sont toujours affichées."
+
+#: guide/templates/guide/activities.html:145
+#: guide/templates/guide/activities.html:189
+msgid "Höchstens"
+msgstr "Au maximum"
+
+#: guide/templates/guide/activities.html:149
+#: guide/templates/guide/activities.html:192
+msgid "Egal"
+msgstr "Peu importe"
+
+#: guide/templates/guide/activities.html:170
+msgid "Distanz"
+msgstr "Distance"
+
+#: guide/templates/guide/activities.html:170
+#, python-format
+msgid "bis %(dist)s km"
+msgstr "jusqu’à %(dist)s km"
+
+#: guide/templates/guide/activities.html:175
+msgid "Von wo aus?"
+msgstr "À partir d’où ?"
+
+#: guide/templates/guide/activities.html:178
+msgid "Mein Standort"
+msgstr "Ma position"
+
+#: guide/templates/guide/activities.html:180
+msgid "Bahnhof"
+msgstr "Gare"
+
+#: guide/templates/guide/activities.html:182
+msgid "Zentrum (Place des Vosges)"
+msgstr "Centre-ville (place des Vosges)"
+
+#: guide/templates/guide/activities.html:206
+msgid "Anwenden"
+msgstr "Appliquer"
+
+#: guide/templates/guide/activities.html:219
+msgid "Suchergebnisse"
+msgstr "Résultats de recherche"
+
+#: guide/templates/guide/activities.html:219
+#: guide/templates/guide/activity_detail.html:11
+msgid "Alle Aktivitäten"
+msgstr "Toutes les activités"
+
+#: guide/templates/guide/activities.html:225
+msgid "Alle Filter zurücksetzen"
+msgstr "Réinitialiser tous les filtres"
+
+#: guide/templates/guide/activities.html:233
+msgid "Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern."
+msgstr ""
+"Aucune activité ne correspond à ta recherche. Essaie avec moins de filtres."
+
+#: guide/templates/guide/activities.html:235
+msgid "Noch keine Aktivitäten vorhanden."
+msgstr "Pas encore d’activités."
+
+#: guide/templates/guide/activities.html:255
+msgid ""
+"Dein Browser kann den Standort nicht teilen. Wähle Bahnhof oder Zentrum."
+msgstr ""
+"Ton navigateur ne peut pas partager ta position. Choisis la gare ou le "
+"centre-ville."
+
+#: guide/templates/guide/activities.html:256
+msgid ""
+"Standort nicht verfügbar. Erlaube ihn im Browser oder wähle Bahnhof oder "
+"Zentrum."
+msgstr ""
+"Position indisponible. Autorise-la dans ton navigateur ou choisis la gare ou"
+" le centre-ville."
+
+#: guide/templates/guide/activity_detail.html:17
+#: guide/templates/guide/moderation.html:19
+msgid "Gemeldet"
+msgstr "Signalé"
+
+#: guide/templates/guide/activity_detail.html:18
+msgid "Für andere noch nicht sichtbar."
+msgstr "Pas encore visible pour les autres."
+
+#: guide/templates/guide/activity_detail.html:29
+msgid "Zurückgeschickt."
+msgstr "Renvoyé."
+
+#: guide/templates/guide/activity_detail.html:31
+msgid "Jetzt überarbeiten und nochmals senden"
+msgstr "Retravailler et renvoyer maintenant"
+
+#: guide/templates/guide/activity_detail.html:36
+msgid "In Prüfung:"
+msgstr "En vérification :"
+
+#: guide/templates/guide/activity_detail.html:36
+msgid ""
+"Diese Aktivität wurde gemeldet und ist für andere ausgeblendet, bis sie "
+"geprüft ist. Nur du siehst sie."
+msgstr ""
+"Cette activité a été signalée et reste masquée pour les autres jusqu’à la "
+"vérification. Toi seul·e la vois."
+
+#: guide/templates/guide/activity_detail.html:41
+msgid "Wartet auf Freigabe:"
+msgstr "En attente de validation :"
+
+#: guide/templates/guide/activity_detail.html:41
+msgid ""
+"Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden bei den "
+"Aktivitäten. Bis dahin siehst nur du sie."
+msgstr ""
+"Nous vérifions ton activité. Elle apparaîtra dans les 24 heures parmi les "
+"activités. D’ici là, toi seul·e la vois."
+
+#: guide/templates/guide/activity_detail.html:46
+msgid "Das ist ein Entwurf, nur du siehst ihn."
+msgstr "C’est un brouillon, toi seul·e le vois."
+
+#: guide/templates/guide/activity_detail.html:47
+msgid "Jetzt fertigstellen und veröffentlichen"
+msgstr "Terminer et publier maintenant"
+
+#: guide/templates/guide/activity_detail.html:60
+#, python-format
+msgid "%(counter)s Bewertung"
+msgid_plural "%(counter)s Bewertungen"
+msgstr[0] "%(counter)s avis"
+msgstr[1] "%(counter)s avis"
+
+#: guide/templates/guide/activity_detail.html:78
+#: guide/templates/guide/base.html:365
+msgid "Gespeichert"
+msgstr "Enregistré"
+
+#: guide/templates/guide/activity_detail.html:92
+#: guide/templates/guide/activity_detail.html:160
+msgid "Bewertung ändern"
+msgstr "Modifier mon avis"
+
+#: guide/templates/guide/activity_detail.html:92
+msgid "Bewerten"
+msgstr "Donner un avis"
+
+#: guide/templates/guide/activity_detail.html:111
+#: guide/templates/guide/activity_detail.html:371
+#, python-format
+msgid "Foto %(n)s von %(title)s"
+msgstr "Photo %(n)s de %(title)s"
+
+#: guide/templates/guide/activity_detail.html:117
+#: guide/templates/guide/activity_detail.html:386
+msgid "Vorheriges Foto"
+msgstr "Photo précédente"
+
+#: guide/templates/guide/activity_detail.html:118
+#: guide/templates/guide/activity_detail.html:387
+msgid "Nächstes Foto"
+msgstr "Photo suivante"
+
+#: guide/templates/guide/activity_detail.html:126
+#, python-format
+msgid "Foto %(n)s zeigen"
+msgstr "Afficher la photo %(n)s"
+
+#: guide/templates/guide/activity_detail.html:147
+msgid "Über diese Aktivität"
+msgstr "À propos de cette activité"
+
+#: guide/templates/guide/activity_detail.html:151
+#: guide/templates/guide/activity_detail.html:174
+msgid "Automatisch übersetzt mit DeepL"
+msgstr "Traduit automatiquement avec DeepL"
+
+#: guide/templates/guide/activity_detail.html:160
+msgid "Bewertung schreiben"
+msgstr "Écrire un avis"
+
+#: guide/templates/guide/activity_detail.html:168
+msgid "(du)"
+msgstr "(toi)"
+
+#: guide/templates/guide/activity_detail.html:176
+#, python-format
+msgid "Besucht im %(date)s"
+msgstr "Visité en %(date)s"
+
+#: guide/templates/guide/activity_detail.html:180
+msgid "Sei die erste Person, die diese Aktivität bewertet."
+msgstr "Sois la première personne à donner un avis sur cette activité."
+
+#: guide/templates/guide/activity_detail.html:203
+#, python-format
+msgid "Karte: %(location)s"
+msgstr "Carte : %(location)s"
+
+#: guide/templates/guide/activity_detail.html:206
+msgid "Grosse Karte öffnen"
+msgstr "Ouvrir la grande carte"
+
+#: guide/templates/guide/activity_detail.html:222
+msgid "Öffnet die Route in Google Maps, Start ist dein Standort."
+msgstr "Ouvre l’itinéraire dans Google Maps, le départ est ta position."
+
+#: guide/templates/guide/activity_detail.html:230
+#, python-format
+msgid "%(minutes)s Min. zu Fuss"
+msgstr "%(minutes)s min à pied"
+
+#: guide/templates/guide/activity_detail.html:235
+#, python-format
+msgid "Linie %(name)s"
+msgstr "Ligne %(name)s"
+
+#: guide/templates/guide/activity_detail.html:241
+msgid "Haltestellen und Linien von Imagine, dem Bus in Épinal."
+msgstr "Arrêts et lignes d’Imagine, le bus d’Épinal."
+
+#: guide/templates/guide/activity_detail.html:251
+#: guide/templates/guide/add_activity.html:109
+msgid "Öffnungszeiten"
+msgstr "Horaires d’ouverture"
+
+#: guide/templates/guide/activity_detail.html:267
+#, python-format
+msgid "Hinzugefügt von %(user)s am %(date)s"
+msgstr "Ajouté par %(user)s le %(date)s"
+
+#: guide/templates/guide/activity_detail.html:273
+msgid "Stimmt etwas nicht?"
+msgstr "Quelque chose ne va pas ?"
+
+#: guide/templates/guide/activity_detail.html:277
+#: guide/templates/guide/activity_detail.html:321
+msgid "Fehler melden"
+msgstr "Signaler une erreur"
+
+#: guide/templates/guide/activity_detail.html:281
+#: guide/templates/guide/activity_detail.html:355
+msgid "Melden"
+msgstr "Signaler"
+
+#: guide/templates/guide/activity_detail.html:284
+msgid ""
+"Fehler: z.B. falsche Adresse oder Öffnungszeiten. Melden: Spam oder "
+"unpassender Inhalt, wird sofort ausgeblendet."
+msgstr ""
+"Erreur : p. ex. mauvaise adresse ou mauvais horaires. Signaler : spam ou "
+"contenu inapproprié, masqué immédiatement."
+
+#: guide/templates/guide/activity_detail.html:299
+#: guide/templates/guide/activity_detail.html:320
+#: guide/templates/guide/activity_detail.html:342
+#: guide/templates/guide/activity_detail.html:367
+#: guide/templates/guide/base.html:132 guide/templates/guide/base.html:179
+#: guide/templates/guide/my_uploads.html:186
+#: guide/templates/guide/my_uploads.html:207
+msgid "Schliessen"
+msgstr "Fermer"
+
+#: guide/templates/guide/activity_detail.html:304
+msgid ""
+"Bis zu 10 Fotos auf einmal, je höchstens 10 MB. Nur eigene Fotos hochladen."
+msgstr ""
+"Jusqu’à 10 photos à la fois, 10 Mo maximum chacune. Seulement tes propres "
+"photos."
+
+#: guide/templates/guide/activity_detail.html:308
+msgid "Hochladen"
+msgstr "Envoyer les photos"
+
+#: guide/templates/guide/activity_detail.html:324
+msgid "Stimmt etwas nicht? Sag uns, was falsch ist."
+msgstr "Quelque chose ne va pas ? Dis-nous ce qui est faux."
+
+#: guide/templates/guide/activity_detail.html:330
+#: guide/templates/guide/add_activity.html:118
+#: guide/templates/guide/contact.html:62
+msgid "Senden"
+msgstr "Envoyer"
+
+#: guide/templates/guide/activity_detail.html:343
+msgid "Aktivität melden"
+msgstr "Signaler l’activité"
+
+#: guide/templates/guide/activity_detail.html:346
+msgid "Warum soll diese Aktivität geprüft werden?"
+msgstr "Pourquoi faut-il vérifier cette activité ?"
+
+#: guide/templates/guide/activity_detail.html:364
+msgid "Fotos gross"
+msgstr "Photos en grand"
+
+#: guide/templates/guide/activity_detail.html:377
+msgid "Wirklich löschen?"
+msgstr "Vraiment supprimer ?"
+
+#: guide/templates/guide/activity_detail.html:378
+msgid "Mein Foto löschen"
+msgstr "Supprimer ma photo"
+
+#: guide/templates/guide/activity_detail.html:484
+msgid ""
+"<a "
+"href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>-Mitwirkende"
+msgstr ""
+"Contributeurs <a "
+"href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+
+#: guide/templates/guide/add_activity.html:4
+#: guide/templates/guide/add_activity.html:10
+msgid "Aktivität bearbeiten"
+msgstr "Modifier l’activité"
+
+#: guide/templates/guide/add_activity.html:4
+#: guide/templates/guide/add_activity.html:10
+#: guide/templates/guide/base.html:101 guide/templates/guide/base.html:153
+msgid "Aktivität hinzufügen"
+msgstr "Ajouter une activité"
+
+#: guide/templates/guide/add_activity.html:17
+#: guide/templates/guide/add_activity.html:39
+msgid "Standortinformationen"
+msgstr "Informations sur le lieu"
+
+#: guide/templates/guide/add_activity.html:22
+msgid "Kontakt &amp; Öffnungszeiten"
+msgstr "Contact &amp; horaires"
+
+#: guide/templates/guide/add_activity.html:31
+msgid "Zurückgeschickt:"
+msgstr "Renvoyé :"
+
+#: guide/templates/guide/add_activity.html:70
+#: guide/templates/guide/add_activity.html:133
+msgid "Titelbild"
+msgstr "Photo principale"
+
+#: guide/templates/guide/add_activity.html:71
+#: guide/templates/guide/add_activity.html:182
+msgid "Foto entfernen"
+msgstr "Retirer la photo"
+
+#: guide/templates/guide/add_activity.html:72
+#: guide/templates/guide/add_activity.html:183
+msgid "Als Titelbild"
+msgstr "Photo principale"
+
+#: guide/templates/guide/add_activity.html:89
+msgid "Ausschnitt fürs Titelbild"
+msgstr "Cadrage de la photo principale"
+
+#: guide/templates/guide/add_activity.html:91
+msgid ""
+"Zieh das Bild, bis der richtige Teil zu sehen ist. So erscheint es auf den "
+"Kacheln und oben auf der Seite."
+msgstr ""
+"Fais glisser l’image jusqu’à ce que la bonne partie soit visible. C’est "
+"comme ça qu’elle apparaît sur les vignettes et en haut de la page."
+
+#: guide/templates/guide/add_activity.html:95
+msgid "Speichern &amp; fortfahren"
+msgstr "Enregistrer &amp; continuer"
+
+#: guide/templates/guide/add_activity.html:100
+msgid "Kontaktinformationen"
+msgstr "Coordonnées"
+
+#: guide/templates/guide/add_activity.html:105
+msgid "Anreise"
+msgstr "Accès"
+
+#: guide/templates/guide/add_activity.html:114
+#: guide/templates/guide/my_uploads.html:165
+msgid "Zurück"
+msgstr "Retour"
+
+#: guide/templates/guide/add_activity.html:116
+msgid "Als Entwurf speichern"
+msgstr "Enregistrer comme brouillon"
+
+#: guide/templates/guide/add_activity.html:122
+msgid ""
+"Nach dem Senden prüfen wir deine Aktivität. Sie erscheint innerhalb von 24 "
+"Stunden bei den Aktivitäten."
+msgstr ""
+"Après l’envoi, nous vérifions ton activité. Elle apparaîtra dans les 24 "
+"heures parmi les activités."
+
+#: guide/templates/guide/base.html:29
+msgid "Irgendein Text,"
+msgstr "Un petit texte,"
+
+#: guide/templates/guide/base.html:29
+msgid "der bisschen beschreibt."
+msgstr "qui décrit un peu."
+
+#: guide/templates/guide/base.html:53 guide/templates/guide/base.html:57
+#: guide/templates/guide/base.html:151 guide/templates/guide/favorites.html:4
+#: guide/templates/guide/favorites.html:10
+msgid "Favoriten"
+msgstr "Favoris"
+
+#: guide/templates/guide/base.html:60 guide/templates/guide/base.html:62
+#: guide/templates/guide/base.html:99 guide/templates/guide/base.html:152
+#: guide/templates/guide/my_uploads.html:5
+#: guide/templates/guide/my_uploads.html:12
+msgid "Deine Uploads"
+msgstr "Mes ajouts"
+
+#: guide/templates/guide/base.html:60
+msgid "neue Mitteilungen"
+msgstr "nouvelles notifications"
+
+#: guide/templates/guide/base.html:64
+msgid "Neue Mitteilungen"
+msgstr "Nouvelles notifications"
+
+#: guide/templates/guide/base.html:69 guide/templates/guide/base.html:71
+#: guide/templates/guide/moderation.html:4
+#: guide/templates/guide/moderation.html:8
+msgid "Prüfen"
+msgstr "Vérifier"
+
+#: guide/templates/guide/base.html:93
+msgid "Profil"
+msgstr "Profil"
+
+#: guide/templates/guide/base.html:98 guide/templates/guide/profile.html:4
+#: guide/templates/guide/profile.html:9
+msgid "Mein Profil"
+msgstr "Mon profil"
+
+#: guide/templates/guide/base.html:100
+#: guide/templates/guide/notifications.html:4
+#: guide/templates/guide/notifications.html:9
+msgid "Mitteilungen"
+msgstr "Notifications"
+
+#: guide/templates/guide/base.html:105
+msgid "Nachrichten"
+msgstr "Messages"
+
+#: guide/templates/guide/base.html:106
+msgid "Meldungen"
+msgstr "Signalements"
+
+#: guide/templates/guide/base.html:107
+msgid "Besuche"
+msgstr "Visites"
+
+#: guide/templates/guide/base.html:112 guide/templates/guide/profile.html:59
+msgid "Abmelden"
+msgstr "Se déconnecter"
+
+#: guide/templates/guide/base.html:120
+#: guide/templates/registration/login.html:4
+#: guide/templates/registration/login.html:8
+msgid "Login"
+msgstr "Connexion"
+
+#: guide/templates/guide/base.html:145
+msgid ""
+"Aktivitäten, Orte und Tipps für Épinal, gesammelt von Leuten, die dort "
+"waren."
+msgstr ""
+"Activités, lieux et bons plans à Épinal, réunis par des gens qui y sont "
+"allés."
+
+#: guide/templates/guide/base.html:148
+msgid "Entdecken"
+msgstr "Découvrir"
+
+#: guide/templates/guide/base.html:157
+msgid "Über die Website"
+msgstr "À propos du site"
+
+#: guide/templates/guide/base.html:161
+msgid "Problem melden"
+msgstr "Signaler un problème"
+
+#: guide/templates/guide/base.html:162
+msgid "Tipp vorschlagen"
+msgstr "Proposer une idée"
+
+#: guide/templates/guide/base.html:168
+msgid "Ein Projekt im Rahmen einer Maturaarbeit"
+msgstr "Un projet réalisé dans le cadre d’un travail de maturité"
+
+#: guide/templates/guide/base.html:180 guide/templates/guide/base.html:202
+#: guide/templates/guide/base.html:244 guide/templates/guide/base.html:270
+msgid "Anmelden"
+msgstr "Se connecter"
+
+#: guide/templates/guide/base.html:193
+msgid "Benutzername oder E-Mail"
+msgstr "Nom d’utilisateur ou e-mail"
+
+#: guide/templates/guide/base.html:198 guide/templates/guide/base.html:229
+#: guide/templates/guide/profile.html:40
+#: guide/templates/registration/login.html:23
+msgid "Passwort"
+msgstr "Mot de passe"
+
+#: guide/templates/guide/base.html:206
+#: guide/templates/registration/login.html:32
+msgid "Noch kein Konto?"
+msgstr "Pas encore de compte ?"
+
+#: guide/templates/guide/base.html:207 guide/templates/guide/base.html:239
+#: guide/templates/registration/login.html:32
+#: guide/templates/registration/register.html:4
+#: guide/templates/registration/register.html:23
+msgid "Registrieren"
+msgstr "S’inscrire"
+
+#: guide/templates/guide/base.html:231
+msgid "Mindestens 8 Zeichen."
+msgstr "Au moins 8 caractères."
+
+#: guide/templates/guide/base.html:235
+msgid "Passwort wiederholen"
+msgstr "Répéter le mot de passe"
+
+#: guide/templates/guide/base.html:243
+#: guide/templates/registration/register.html:27
+msgid "Schon ein Konto?"
+msgstr "Déjà un compte ?"
+
+#: guide/templates/guide/base.html:270
+#: guide/templates/registration/register.html:8
+msgid "Konto erstellen"
+msgstr "Créer un compte"
+
+#: guide/templates/guide/base.html:309
+msgid "Etwas ist schiefgelaufen. Bitte nochmals versuchen."
+msgstr "Un problème est survenu. Réessaie, s’il te plaît."
+
+#: guide/templates/guide/contact.html:14
+msgid ""
+"Du hast eine Frage, einen Tipp für eine Aktivität oder etwas funktioniert "
+"nicht? Schreib mir."
+msgstr ""
+"Tu as une question, une idée d’activité ou quelque chose ne marche pas ? "
+"Écris-moi."
+
+#: guide/templates/guide/contact.html:23
+msgid "Mehr über mich"
+msgstr "En savoir plus sur moi"
+
+#: guide/templates/guide/contact.html:38
+msgid "Épinal, Vosges (Frankreich)"
+msgstr "Épinal, Vosges (France)"
+
+#: guide/templates/guide/contact.html:42
+msgid "Noch keine Kontaktdaten eingetragen."
+msgstr "Pas encore de coordonnées."
+
+#: guide/templates/guide/contact.html:42
+msgid "Jetzt ergänzen"
+msgstr "Compléter maintenant"
+
+#: guide/templates/guide/contact.html:49
+msgid "Nachricht schreiben"
+msgstr "Écrire un message"
+
+#: guide/templates/guide/favorites.html:11
+msgid "Hier findest du deine gespeicherten Aktivitäten."
+msgstr "Ici, tu trouves tes activités enregistrées."
+
+#: guide/templates/guide/favorites.html:21
+msgid ""
+"Du hast noch keine Favoriten. Tippe bei einer Aktivität auf das Herz, um sie"
+" hier zu speichern."
+msgstr ""
+"Tu n’as pas encore de favoris. Touche le cœur d’une activité pour "
+"l’enregistrer ici."
+
+#: guide/templates/guide/moderation.html:9
+#, python-format
+msgid ""
+"Neue Aktivitäten erscheinen erst, wenn du sie hier freigibst. Löschen oder "
+"ändern geht im <a href=\"%(admin_url)s\">Admin</a>."
+msgstr ""
+"Les nouvelles activités n’apparaissent que quand tu les valides ici. "
+"Supprimer ou modifier se fait dans l’<a href=\"%(admin_url)s\">admin</a>."
+
+#: guide/templates/guide/moderation.html:16
+msgid "Nichts zu prüfen."
+msgstr "Rien à vérifier."
+
+#: guide/templates/guide/moderation.html:20
+msgid ""
+"Gemeldet und deshalb ausgeblendet. Freigeben, wenn alles in Ordnung ist. "
+"Zurückschicken, wenn die Person etwas ändern soll. Sonst im Admin löschen."
+msgstr ""
+"Signalé et donc masqué. Valide si tout est en ordre. Renvoie si la personne "
+"doit changer quelque chose. Sinon, supprime dans l’admin."
+
+#: guide/templates/guide/moderation.html:25
+msgid "Keine Meldungen."
+msgstr "Aucun signalement."
+
+#: guide/templates/guide/moderation.html:28
+#: guide/templates/guide/moderation.html:38
+msgid "Fehler"
+msgstr "Erreurs"
+
+#: guide/templates/guide/moderation.html:29
+msgid ""
+"Die Aktivität ist weiterhin online. Selbst korrigieren mit «Bearbeiten» und "
+"danach «Erledigt», oder «Zurückschicken»: Dann bekommt die Person, die sie "
+"hinzugefügt hat, den Fehler als Mitteilung."
+msgstr ""
+"L’activité reste en ligne. Corrige toi-même avec « Modifier » puis « Fait »,"
+" ou « Renvoyer » : la personne qui l’a ajoutée reçoit alors l’erreur comme "
+"notification."
+
+#: guide/templates/guide/moderation.html:56
+msgid "Erledigt"
+msgstr "Fait"
+
+#: guide/templates/guide/moderation.html:64
+#, python-format
+msgid ""
+"%(user)s bekommt den gemeldeten Fehler als Mitteilung. Möchtest du noch "
+"etwas dazuschreiben? (optional)"
+msgstr ""
+"%(user)s reçoit l’erreur signalée comme notification. Tu veux ajouter "
+"quelque chose ? (facultatif)"
+
+#: guide/templates/guide/moderation.html:71
+msgid "Keine Fehler gemeldet."
+msgstr "Aucune erreur signalée."
+
+#: guide/templates/guide/moderation.html:74
+msgid "Vorschläge für Kategorien"
+msgstr "Propositions de catégories"
+
+#: guide/templates/guide/moderation.html:75
+#, python-format
+msgid ""
+"Kam bei «Keine passt? Eigene hinzufügen» dazu. Freigeben = erscheint im "
+"Filter und beim Hinzufügen. Verwerfen = die Aktivitäten stehen dann unter "
+"der Hauptkategorie, und die Person bekommt eine Mitteilung. Umbenennen geht "
+"im <a href=\"%(category_admin_url)s?approved__exact=0\">Admin</a>."
+msgstr ""
+"Ajouté via « Aucune ne convient ? Ajoute la tienne ». Valider = apparaît "
+"dans le filtre et lors de l’ajout. Rejeter = les activités passent dans la "
+"catégorie principale, et la personne reçoit une notification. Renommer se "
+"fait dans l’<a href=\"%(category_admin_url)s?approved__exact=0\">admin</a>."
+
+#: guide/templates/guide/moderation.html:83
+#, python-format
+msgid "in %(parent)s"
+msgstr "dans %(parent)s"
+
+#: guide/templates/guide/moderation.html:83
+msgid "neue Hauptkategorie"
+msgstr "nouvelle catégorie principale"
+
+#: guide/templates/guide/moderation.html:84
+#, python-format
+msgid "%(counter)s Aktivität"
+msgid_plural "%(counter)s Aktivitäten"
+msgstr[0] "%(counter)s activité"
+msgstr[1] "%(counter)s activités"
+
+#: guide/templates/guide/moderation.html:91
+msgid "Verwerfen"
+msgstr "Rejeter"
+
+#: guide/templates/guide/moderation.html:100
+msgid "Keine Vorschläge."
+msgstr "Aucune proposition."
+
+#: guide/templates/guide/my_uploads.html:13
+msgid "Verwalte deine eigenen Aktivitäten"
+msgstr "Gère tes propres activités"
+
+#: guide/templates/guide/my_uploads.html:16
+msgid "Neue Aktivität hinzufügen"
+msgstr "Ajouter une nouvelle activité"
+
+#: guide/templates/guide/my_uploads.html:25
+msgid "Meine Aktivitäten"
+msgstr "Mes activités"
+
+#: guide/templates/guide/my_uploads.html:29
+msgid "Entwürfe"
+msgstr "Brouillons"
+
+#: guide/templates/guide/my_uploads.html:38
+msgid "Sortieren nach"
+msgstr "Trier par"
+
+#: guide/templates/guide/my_uploads.html:41
+#, python-format
+msgid "Sortieren nach: %(label)s"
+msgstr "Trier par : %(label)s"
+
+#: guide/templates/guide/my_uploads.html:58
+msgid "Status"
+msgstr "Statut"
+
+#: guide/templates/guide/my_uploads.html:60
+msgid "Dauer"
+msgstr "Durée"
+
+#: guide/templates/guide/my_uploads.html:61
+msgid "Aktionen"
+msgstr "Actions"
+
+#: guide/templates/guide/my_uploads.html:71
+msgid "Noch keine"
+msgstr "Pas encore"
+
+#: guide/templates/guide/my_uploads.html:77
+#: guide/templates/guide/my_uploads.html:151
+#: guide/templates/guide/my_uploads.html:194
+msgid "Löschen"
+msgstr "Supprimer"
+
+#: guide/templates/guide/my_uploads.html:101
+msgid "Du hast keine Entwürfe."
+msgstr "Tu n’as pas de brouillons."
+
+#: guide/templates/guide/my_uploads.html:102
+msgid "Du hast noch nichts hochgeladen."
+msgstr "Tu n’as encore rien ajouté."
+
+#: guide/templates/guide/my_uploads.html:103
+msgid "Ort, Fotos und Infos teilen"
+msgstr "Partager un lieu, des photos et des infos"
+
+#: guide/templates/guide/my_uploads.html:122
+msgid "Mehr"
+msgstr "Plus"
+
+#: guide/templates/guide/my_uploads.html:162
+msgid "Seiten"
+msgstr "Pages"
+
+#: guide/templates/guide/my_uploads.html:173
+msgid "Weiter"
+msgstr "Suivant"
+
+#: guide/templates/guide/my_uploads.html:187
+msgid "Aktivität löschen?"
+msgstr "Supprimer l’activité ?"
+
+#: guide/templates/guide/my_uploads.html:190
+msgid ""
+"«<span id=\"deleteTitle\"></span>» wird mit allen Fotos und Bewertungen "
+"gelöscht. Das kann man nicht rückgängig machen."
+msgstr ""
+"« <span id=\"deleteTitle\"></span> » sera supprimée avec toutes ses photos "
+"et tous ses avis. C’est définitif."
+
+#: guide/templates/guide/my_uploads.html:208
+msgid "Neu für dich"
+msgstr "Nouveau pour toi"
+
+#: guide/templates/guide/my_uploads.html:219
+msgid "Alle Mitteilungen"
+msgstr "Toutes les notifications"
+
+#: guide/templates/guide/my_uploads.html:220
+msgid "OK"
+msgstr "OK"
+
+#: guide/templates/guide/notifications.html:13
+msgid "neu"
+msgstr "nouveau"
+
+#: guide/templates/guide/notifications.html:19
+msgid ""
+"Noch keine Mitteilungen. Hier steht zum Beispiel, wenn deine Aktivität "
+"freigegeben wurde."
+msgstr ""
+"Pas encore de notifications. Ici, tu verras par exemple quand ton activité a"
+" été validée."
+
+#: guide/templates/guide/profile.html:10
+#, python-format
+msgid "Dabei seit %(date)s"
+msgstr "Membre depuis %(date)s"
+
+#: guide/templates/guide/profile.html:16
+msgid "Uploads"
+msgstr "Ajouts"
+
+#: guide/templates/guide/profile.html:16
+#, python-format
+msgid "%(published)s online"
+msgstr "%(published)s en ligne"
+
+#: guide/templates/guide/profile.html:20
+msgctxt "Profil"
+msgid "Bewertung"
+msgstr "avis"
+
+#: guide/templates/guide/profile.html:20
+msgctxt "Profil"
+msgid "Bewertungen"
+msgstr "avis"
+
+#: guide/templates/guide/profile.html:24
+msgctxt "Profil"
+msgid "Favorit"
+msgstr "favori"
+
+#: guide/templates/guide/profile.html:24
+msgctxt "Profil"
+msgid "Favoriten"
+msgstr "favoris"
+
+#: guide/templates/guide/profile.html:29
+msgid "Deine Angaben"
+msgstr "Tes informations"
+
+#: guide/templates/guide/profile.html:42 guide/templates/guide/profile.html:53
+msgid "Passwort ändern"
+msgstr "Changer le mot de passe"
+
+#: guide/templates/guide/review_form.html:4
+#, python-format
+msgid "Bewerten: %(title)s"
+msgstr "Donner un avis : %(title)s"
+
+#: guide/templates/guide/review_form.html:11
+msgid "Also, wie war dein Besuch?"
+msgstr "Alors, c’était comment ?"
+
+#: guide/templates/guide/review_form.html:34
+msgid "Sterne"
+msgstr "étoiles"
+
+#: guide/templates/guide/review_form.html:39
+#: guide/templates/guide/review_form.html:40
+#, python-format
+msgid "%(n)s von 5"
+msgstr "%(n)s sur 5"
+
+#: guide/templates/guide/review_form.html:63
+#: guide/templates/guide/review_form.html:72
+msgid "(optional)"
+msgstr "(facultatif)"
+
+#: guide/templates/guide/review_form.html:75
+msgid "Bis zu 10 Fotos, je höchstens 10 MB. Nur eigene Fotos hochladen."
+msgstr ""
+"Jusqu’à 10 photos, 10 Mo maximum chacune. Seulement tes propres photos."
+
+#: guide/templates/guide/review_form.html:90
+msgid "Bewertung speichern"
+msgstr "Enregistrer l’avis"
+
+#: guide/templates/guide/review_form.html:90
+msgid "Bewertung abgeben"
+msgstr "Publier l’avis"
+
+#: guide/templates/guide/review_form.html:94
+msgid "Später bewerten"
+msgstr "Donner un avis plus tard"
+
+#: guide/templates/guide/review_form.html:103
+msgid "Schrecklich"
+msgstr "Horrible"
+
+#: guide/templates/guide/review_form.html:103
+msgid "Mangelhaft"
+msgstr "Insuffisant"
+
+#: guide/templates/guide/review_form.html:103
+msgid "Durchschnittlich"
+msgstr "Moyen"
+
+#: guide/templates/guide/review_form.html:103
+msgid "Sehr gut"
+msgstr "Très bien"
+
+#: guide/templates/guide/review_form.html:103
+msgid "Ausgezeichnet"
+msgstr "Excellent"
+
+#: guide/templates/registration/login.html:11
+msgid "Benutzername oder Passwort falsch."
+msgstr "Nom d’utilisateur ou mot de passe incorrect."
+
+#: guide/templates/registration/login.html:28
+#: guide/templates/registration/register.html:27
+msgid "Einloggen"
+msgstr "Se connecter"
+
+#: guide/views.py:119
+msgid "Benutzername/E-Mail oder Passwort falsch."
+msgstr "Nom d’utilisateur/e-mail ou mot de passe incorrect."
+
+#: guide/views.py:143
+msgid "Nur gratis"
+msgstr "Seulement gratuit"
+
+#: guide/views.py:143
+msgid "bis 20 €"
+msgstr "jusqu’à 20 €"
+
+#: guide/views.py:143
+msgid "bis 30 €"
+msgstr "jusqu’à 30 €"
+
+#: guide/views.py:144
+msgid "bis 50 €"
+msgstr "jusqu’à 50 €"
+
+#: guide/views.py:144
+msgid "bis 100 €"
+msgstr "jusqu’à 100 €"
+
+#: guide/views.py:428
+msgid ""
+"Gespeichert. Die Aktivität bleibt in Prüfung, bis sie freigegeben wird."
+msgstr "Enregistré. L’activité reste en vérification jusqu’à sa validation."
+
+#: guide/views.py:431
+msgid "Als Entwurf gespeichert. Du findest ihn unter «Deine Uploads»."
+msgstr "Enregistré comme brouillon. Tu le trouves dans « Mes ajouts »."
+
+#: guide/views.py:434
+msgid "Deine Änderungen wurden gespeichert."
+msgstr "Tes modifications ont été enregistrées."
+
+#: guide/views.py:437
+msgid ""
+"Danke! Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden "
+"bei den Aktivitäten."
+msgstr ""
+"Merci ! Nous vérifions ton activité. Elle apparaîtra dans les 24 heures "
+"parmi les activités."
+
+#: guide/views.py:472
+#, python-format
+msgid "«%(title)s» wurde gelöscht."
+msgstr "« %(title)s » a été supprimée."
+
+#: guide/views.py:479
+msgid "Neueste zuerst"
+msgstr "Plus récentes d’abord"
+
+#: guide/views.py:480
+msgid "Älteste zuerst"
+msgstr "Plus anciennes d’abord"
+
+#: guide/views.py:481
+msgid "Name A–Z"
+msgstr "Nom A–Z"
+
+#: guide/views.py:482
+msgid "Beste Bewertung"
+msgstr "Meilleur avis"
+
+#: guide/views.py:551
+msgid "Danke für deine Bewertung!"
+msgstr "Merci pour ton avis !"
+
+#: guide/views.py:582
+msgid "Danke, deine Fotos wurden hinzugefügt."
+msgstr "Merci, tes photos ont été ajoutées."
+
+#: guide/views.py:598
+msgid "Dein Foto wurde gelöscht."
+msgstr "Ta photo a été supprimée."
+
+#: guide/views.py:615
+msgid "Danke! Wir prüfen den Fehler und korrigieren ihn."
+msgstr "Merci ! Nous vérifions l’erreur et la corrigeons."
+
+#: guide/views.py:620
+msgid ""
+"Danke für deine Meldung. Die Aktivität ist ausgeblendet, bis wir sie geprüft"
+" haben."
+msgstr ""
+"Merci pour ton signalement. L’activité est masquée jusqu’à ce que nous "
+"l’ayons vérifiée."
+
+#: guide/views.py:624
+msgid "Bitte beschreib kurz, was falsch ist."
+msgstr "Décris en quelques mots ce qui est faux, s’il te plaît."
+
+#: guide/views.py:626
+msgid "Bitte wähle einen Grund aus."
+msgstr "Choisis une raison, s’il te plaît."
+
+#: guide/views.py:663
+msgid "Als erledigt markiert."
+msgstr "Marqué comme fait."
+
+#: guide/views.py:679
+#, python-format
+msgid "Deine Aktivität «%(title)s» wurde geprüft und ist wieder online."
+msgstr "Ton activité « %(title)s » a été vérifiée et est de nouveau en ligne."
+
+#: guide/views.py:680
+#, python-format
+msgid ""
+"Deine Aktivität «%(title)s» wurde freigegeben und ist jetzt online. Danke!"
+msgstr ""
+"Ton activité « %(title)s » a été validée et est maintenant en ligne. Merci !"
+
+#: guide/views.py:682
+#, python-format
+msgid "«%(title)s» ist jetzt veröffentlicht."
+msgstr "« %(title)s » est maintenant publiée."
+
+#: guide/views.py:705
+msgid "Bitte schreib kurz, was geändert werden soll."
+msgstr "Écris en quelques mots ce qui doit être changé, s’il te plaît."
+
+#: guide/views.py:712
+#, python-format
+msgid ""
+"Deine Aktivität «%(title)s» wurde zurückgeschickt: %(note)s Bitte "
+"überarbeite sie und sende sie nochmals."
+msgstr ""
+"Ton activité « %(title)s » a été renvoyée : %(note)s Merci de la "
+"retravailler et de la renvoyer."
+
+#: guide/views.py:715
+#, python-format
+msgid "«%(title)s» wurde zurückgeschickt."
+msgstr "« %(title)s » a été renvoyée."
+
+#: guide/views.py:729
+#, python-format
+msgid ""
+"Bei deiner Aktivität «%(title)s» wurde ein Fehler gemeldet: «%(error)s»"
+msgstr ""
+"Une erreur a été signalée pour ton activité « %(title)s » : « %(error)s »"
+
+#: guide/views.py:732
+#, python-format
+msgid "Bei deiner Aktivität «%(title)s» wurde ein Fehler gemeldet."
+msgstr "Une erreur a été signalée pour ton activité « %(title)s »."
+
+#: guide/views.py:735
+msgid "Kannst du das korrigieren?"
+msgstr "Peux-tu la corriger ?"
+
+#: guide/views.py:739
+#, python-format
+msgid "Fehler zu «%(title)s» wurde an %(user)s geschickt."
+msgstr "L’erreur concernant « %(title)s » a été envoyée à %(user)s."
+
+#: guide/views.py:751
+#, python-format
+msgid "«%(name)s» hat Unterkategorien und kann nicht verworfen werden."
+msgstr "« %(name)s » a des sous-catégories et ne peut pas être rejetée."
+
+#: guide/views.py:764
+#, python-format
+msgid "Dein Vorschlag «%(name)s» wurde nicht als Kategorie übernommen."
+msgstr "Ta proposition « %(name)s » n’a pas été retenue comme catégorie."
+
+#: guide/views.py:766
+#, python-format
+msgid "«%(title)s» steht jetzt unter «%(main)s»."
+msgstr "« %(title)s » se trouve maintenant dans « %(main)s »."
+
+#: guide/views.py:769
+#, python-format
+msgid "Bitte wähle für «%(title)s» eine passende Kategorie."
+msgstr "Choisis une catégorie adaptée pour « %(title)s », s’il te plaît."
+
+#: guide/views.py:774
+#, python-format
+msgid "Vorschlag «%(name)s» wurde verworfen."
+msgstr "La proposition « %(name)s » a été rejetée."
+
+#: guide/views.py:788
+msgid "Deine Angaben wurden gespeichert."
+msgstr "Tes informations ont été enregistrées."
+
+#: guide/views.py:795
+msgid "Dein Passwort wurde geändert."
+msgstr "Ton mot de passe a été modifié."
+
+#: guide/views.py:832
+#, python-format
+msgid "«%(name)s» ist jetzt eine Unterkategorie von «%(main)s»."
+msgstr "« %(name)s » est maintenant une sous-catégorie de « %(main)s »."
+
+#: guide/views.py:835
+#, python-format
+msgid "«%(name)s» ist jetzt eine Hauptkategorie."
+msgstr "« %(name)s » est maintenant une catégorie principale."
+
+#: guide/views.py:860
+msgid "«Über mich» wurde gespeichert."
+msgstr "« À propos de moi » a été enregistré."
+
+#: guide/views.py:878
+msgid "Danke für deine Nachricht! Ich melde mich so bald wie möglich."
+msgstr "Merci pour ton message ! Je te réponds dès que possible."

@@ -1,4 +1,5 @@
 {% load guide_extras %}
+{% load i18n %}
 {% comment %}
 Karten-Ansicht: links eine Liste zum Scrollen, rechts die Karte
 (auf dem Handy: Karte oben, Liste darunter zum seitlich Wischen).
@@ -20,7 +21,7 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
                 <div class="map-list-item activity-col" data-id="{{ activity.pk }}">
                     <div class="map-list-img">
                         {% if activity.image %}
-                            <img src="{{ activity.image.url }}" alt="">
+                            <img src="{{ activity.image.url }}" style="object-position: {{ activity.image_position }};" alt="">
                         {% else %}
                             <div class="img-placeholder"><i class="bi bi-image"></i></div>
                         {% endif %}
@@ -30,23 +31,23 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
                         {% if show_status %}
                             {% include "guide/_status_badge.html" %}
                         {% else %}
-                            <span>{% for category in activity.categories.all %}<span class="badge bg-success me-1">{{ category.label }}</span>{% endfor %}</span>
+                            <span>{% for category in activity.categories.all %}<span class="badge cat-badge me-1">{{ category.label }}</span>{% endfor %}</span>
                         {% endif %}
                         <!-- stretched-link = der ganze Eintrag ist klickbar -->
-                        <a href="{% url 'activity_detail' activity.pk %}" class="map-list-title stretched-link">{{ activity.title }}</a>
+                        <a href="{% url 'activity_detail' activity.pk %}" class="map-list-title stretched-link">{{ activity.display_title }}</a>
                         <span class="small text-muted">
                             <i class="bi bi-geo-alt me-1"></i>{{ activity.location.city }} ·
-                            {% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}
+                            {{ activity.get_price_level_display }}
                         </span>
                         <span class="small stars">
                             {% if activity.rating_count %}
                                 {{ activity.avg_rating|stars }} <span class="text-muted">({{ activity.rating_count }})</span>
                             {% else %}
-                                <span class="text-muted">Noch keine Bewertung</span>
+                                <span class="text-muted">{% translate "Noch keine Bewertung" %}</span>
                             {% endif %}
                         </span>
                         {% if activity.location.latitude is None or activity.location.longitude is None %}
-                            <span class="small text-muted fst-italic">Nicht auf der Karte (keine genaue Adresse)</span>
+                            <span class="small text-muted fst-italic">{% translate "Nicht auf der Karte (keine genaue Adresse)" %}</span>
                         {% endif %}
                     </div>
 
@@ -69,6 +70,8 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
 (function () {
+    // Übersetzter Quellenhinweis der Karte (escapejs: sicher auch mit Apostrophen im Französischen)
+    const T_ATTRIBUTION = "{% autoescape off %}{% filter escapejs %}{% translate '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende' %}{% endfilter %}{% endautoescape %}";
     const points = JSON.parse(document.getElementById("mapPoints").textContent);
     const list = document.getElementById("mapList");
     const EPINAL = [48.1724, 6.4496];  // Zentrum von Épinal (Breite, Länge)
@@ -78,7 +81,7 @@ show_status=True (Deine Uploads): Status statt Kategorie und kein Herz.
         maxZoom: 19,
         // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
         referrerPolicy: "strict-origin-when-cross-origin",
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        attribution: T_ATTRIBUTION,
     }).addTo(map);
 
     // Eigene Nadel in unserem Grün (Bootstrap-Icon statt dem blauen Standard-Bild)

@@ -1,56 +1,65 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 {% load guide_extras %}
 {% load l10n %} <!-- unlocalize: Koordinaten mit Punkt statt Komma -->
 
-{% block title %}{{ activity.title }} – Épinal Guide{% endblock %}
+{% block title %}{{ activity.display_title }} – Épinal Guide{% endblock %}
 
 {% block content %}
 <div class="detail">
 
-    <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-arrow-left me-1"></i>Alle Aktivitäten</a>
+    <a href="{% url 'activities' %}" class="link-secondary small"><i class="bi bi-arrow-left me-1"></i>{% translate "Alle Aktivitäten" %}</a>
 
     {% if user.is_staff and activity.status == 'pending' or user.is_staff and activity.status == 'review' %}
         <!-- NEU: nur für den Admin -->
         <div class="alert alert-info mt-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
             <span>
-                <strong>{% if activity.status == 'review' %}Gemeldet{% else %}Wartet auf Freigabe{% endif %}.</strong>
-                Für andere noch nicht sichtbar.
+                <strong>{% if activity.status == 'review' %}{% translate "Gemeldet" %}{% else %}{% translate "Wartet auf Freigabe" %}{% endif %}.</strong>
+                {% translate "Für andere noch nicht sichtbar." %}
             </span>
             <form method="post" action="{% url 'approve_activity' activity.pk %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{% url 'activity_detail' activity.pk %}">
-                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>{% translate "Freigeben" %}</button>
             </form>
+        </div>
+    {% elif activity.status == 'returned' %}
+        <!-- NEU: zurückgeschickt, mit dem Grund vom Admin -->
+        <div class="alert alert-warning mt-3">
+            <strong>{% translate "Zurückgeschickt." %}</strong> {{ activity.return_note }}
+            {% if activity.user == user %}
+                <a href="{% url 'edit_activity' activity.pk %}" class="alert-link">{% translate "Jetzt überarbeiten und nochmals senden" %}</a>
+            {% endif %}
         </div>
     {% elif activity.status == 'review' %}
         <div class="alert alert-danger mt-3">
-            <strong>In Prüfung:</strong> Diese Aktivität wurde gemeldet und ist für andere ausgeblendet,
-            bis sie geprüft ist. Nur du siehst sie.
+            <strong>{% translate "In Prüfung:" %}</strong> {% blocktranslate trimmed %}Diese Aktivität wurde gemeldet und ist für andere ausgeblendet,
+            bis sie geprüft ist. Nur du siehst sie.{% endblocktranslate %}
         </div>
     {% elif activity.status == 'pending' %}
         <div class="alert alert-info mt-3">
-            <strong>Wartet auf Freigabe:</strong> Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden
-            bei den Aktivitäten. Bis dahin siehst nur du sie.
+            <strong>{% translate "Wartet auf Freigabe:" %}</strong> {% blocktranslate trimmed %}Wir prüfen deine Aktivität. Sie erscheint innerhalb von 24 Stunden
+            bei den Aktivitäten. Bis dahin siehst nur du sie.{% endblocktranslate %}
         </div>
     {% elif activity.status != 'published' %}
         <div class="alert alert-warning mt-3">
-            Das ist ein Entwurf, nur du siehst ihn.
-            <a href="{% url 'edit_activity' activity.pk %}" class="alert-link">Jetzt fertigstellen und veröffentlichen</a>
+            {% translate "Das ist ein Entwurf, nur du siehst ihn." %}
+            <a href="{% url 'edit_activity' activity.pk %}" class="alert-link">{% translate "Jetzt fertigstellen und veröffentlichen" %}</a>
         </div>
     {% endif %}
 
     <!-- Titel und Bewertung -->
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mt-3 mb-4">
         <div>
-            {% for category in activity.categories.all %}<span class="badge bg-success me-1 mb-2">{{ category.label }}</span>{% endfor %}
-            <h1 class="detail-title">{{ activity.title }}</h1>
+            {% for category in activity.categories.all %}<span class="badge cat-badge me-1 mb-2">{{ category.label }}</span>{% endfor %}
+            <h1 class="detail-title">{{ activity.display_title }}</h1>
             <div class="d-flex align-items-center gap-2">
                 {% if activity.rating_count %}
                     <span class="stars fs-5">{{ activity.avg_rating|stars }}</span>
                     <span class="fw-semibold">{{ activity.avg_rating|floatformat:1 }}</span>
-                    <a href="#bewertungen" class="link-secondary">({{ activity.rating_count }} Bewertung{{ activity.rating_count|pluralize:"en" }})</a>
+                    <a href="#bewertungen" class="link-secondary">({% blocktranslate trimmed count counter=activity.rating_count %}{{ counter }} Bewertung{% plural %}{{ counter }} Bewertungen{% endblocktranslate %})</a>
                 {% else %}
-                    <span class="text-muted">Noch keine Bewertung</span>
+                    <span class="text-muted">{% translate "Noch keine Bewertung" %}</span>
                 {% endif %}
             </div>
         </div>
@@ -65,22 +74,22 @@
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button type="submit" class="btn btn-outline-danger btn-lg fav-btn fav-inline {% if activity.is_favorite %}is-favorite{% endif %}"
                                 aria-pressed="{% if activity.is_favorite %}true{% else %}false{% endif %}">
-                            <span class="fav-icon">{% if activity.is_favorite %}♥{% else %}♡{% endif %}</span>
-                            <span class="fav-text">{% if activity.is_favorite %}Gespeichert{% else %}Speichern{% endif %}</span>
+                            <i class="bi {% if activity.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} fav-icon me-1"></i>
+                            <span class="fav-text">{% if activity.is_favorite %}{% translate "Gespeichert" %}{% else %}{% translate "Speichern" %}{% endif %}</span>
                         </button>
                     </form>
                 {% else %}
                     <button type="button" class="btn btn-outline-danger btn-lg" data-bs-toggle="modal" data-bs-target="#loginModal">
-                        ♡ Speichern
+                        <i class="bi bi-heart me-1"></i>{% translate "Speichern" %}
                     </button>
                 {% endif %}
             {% endif %}
             {% if activity.user == user %}
-                <a href="{% url 'edit_activity' activity.pk %}" class="btn btn-outline-secondary btn-lg"><i class="bi bi-pencil me-1"></i>Bearbeiten</a>
+                <a href="{% url 'edit_activity' activity.pk %}" class="btn btn-outline-secondary btn-lg"><i class="bi bi-pencil me-1"></i>{% translate "Bearbeiten" %}</a>
             {% endif %}
             {% if activity.status == 'published' %}
                 <a href="{% url 'review_activity' activity.pk %}" class="btn btn-dark btn-lg rounded-pill px-4">
-                    <i class="bi bi-star me-1"></i>{% if my_rating %}Bewertung ändern{% else %}Bewerten{% endif %}
+                    <i class="bi bi-star me-1"></i>{% if my_rating %}{% translate "Bewertung ändern" %}{% else %}{% translate "Bewerten" %}{% endif %}
                 </a>
             {% endif %}
         </div>
@@ -91,70 +100,84 @@
         <!-- Linke Spalte: Bilder, Beschreibung, Bewertungen -->
         <div class="col-lg-8">
 
-            <!-- Titelbild gross -->
-            <div class="detail-hero mb-3">
-                {% if activity.image %}
-                    <img src="{{ activity.image.url }}" alt="{{ activity.title }}">
-                {% elif photos %}
-                    <img src="{{ photos.0.image.url }}" alt="{{ activity.title }}">
-                {% else %}
-                    <div class="img-placeholder h-100"><i class="bi bi-image"></i></div>
-                {% endif %}
-            </div>
-
-            <!-- Weitere Fotos -->
+            <!-- NEU: alle Fotos zum Durchblättern (Titelbild zuerst). Wischen auf dem Handy, Pfeile am Computer.
+                 Klick auf ein Foto öffnet es in voller Grösse. JavaScript unten. -->
             <section id="fotos" class="mb-5">
-                {% if photos %}
-                    <h2 class="h5 mb-3">Fotos ({{ photos|length }})</h2>
-                    <!-- grössere Vorschaubilder, Klick öffnet das Foto in voller Grösse -->
-                    <div class="photo-grid mb-3">
-                        {% for photo in photos %}
-                            <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
-                                <img src="{{ photo.image.url }}" alt="Foto von {{ activity.title }}" loading="lazy">
-                            </a>
-                        {% endfor %}
+                {% if gallery %}
+                    <div class="gallery mb-2">
+                        <div class="gallery-track" id="galleryTrack">
+                            {% for photo in gallery %}
+                                <a class="gallery-slide" href="{{ photo.url }}" target="_blank" rel="noopener" data-index="{{ forloop.counter0 }}">
+                                    <img src="{{ photo.url }}" style="object-position: {{ photo.position }};" alt="{% blocktranslate with n=forloop.counter title=activity.display_title %}Foto {{ n }} von {{ title }}{% endblocktranslate %}"
+                                         {% if not forloop.first %}loading="lazy"{% endif %}>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        {% if gallery|length > 1 %}
+                            <button type="button" class="gallery-nav gallery-prev" aria-label="{% translate "Vorheriges Foto" %}"><i class="bi bi-chevron-left"></i></button>
+                            <button type="button" class="gallery-nav gallery-next" aria-label="{% translate "Nächstes Foto" %}"><i class="bi bi-chevron-right"></i></button>
+                            <span class="gallery-count"><span id="galleryIndex">1</span> / {{ gallery|length }}</span>
+                        {% endif %}
                     </div>
+                    {% if gallery|length > 1 %}
+                        <div class="gallery-thumbs mb-3">
+                            {% for photo in gallery %}
+                                <button type="button" class="gallery-thumb {% if forloop.first %}is-active{% endif %}"
+                                        data-index="{{ forloop.counter0 }}" aria-label="{% blocktranslate with n=forloop.counter %}Foto {{ n }} zeigen{% endblocktranslate %}">
+                                    <img src="{{ photo.url }}" style="object-position: {{ photo.position }};" alt="" loading="lazy">
+                                </button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="detail-hero mb-3"><div class="img-placeholder h-100"><i class="bi bi-image"></i></div></div>
                 {% endif %}
 
                 <!-- ein Knopf: Kamera + Fotos hinzufügen -->
                 {% if activity.status == 'published' %}
-                    <button type="button" class="btn btn-outline-primary photo-add-btn" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-dark rounded-pill photo-add-btn" data-bs-toggle="modal"
                             data-bs-target="{% if user.is_authenticated %}#photoModal{% else %}#loginModal{% endif %}">
-                        <i class="bi bi-camera"></i> Fotos hinzufügen
+                        <i class="bi bi-camera"></i> {% translate "Fotos hinzufügen" %}
                     </button>
                 {% endif %}
             </section>
 
             <!-- Beschreibung -->
             <section class="mb-5">
-                <h2 class="h5">Über diese Aktivität</h2>
-                <p class="detail-text">{{ activity.description|linebreaksbr }}</p>
+                <h2 class="h5">{% translate "Über diese Aktivität" %}</h2>
+                <p class="detail-text">{{ activity.display_description|linebreaksbr }}</p>
+                {% if activity.is_translated %}
+                    <!-- NEU: Hinweis, dass der Text automatisch übersetzt ist -->
+                    <p class="small text-muted"><i class="bi bi-translate me-1"></i>{% translate "Automatisch übersetzt mit DeepL" %}</p>
+                {% endif %}
             </section>
 
             <!-- Bewertungen -->
             <section id="bewertungen">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 mb-0">Bewertungen ({{ reviews|length }})</h2>
+                    <h2 class="h5 mb-0">{% translate "Bewertungen" %} ({{ reviews|length }})</h2>
                     {% if activity.status == 'published' %}
-                        <a href="{% url 'review_activity' activity.pk %}" class="btn btn-sm btn-outline-dark rounded-pill">{% if my_rating %}Bewertung ändern{% else %}Bewertung schreiben{% endif %}</a>
+                        <a href="{% url 'review_activity' activity.pk %}" class="btn btn-sm btn-dark rounded-pill px-3">{% if my_rating %}{% translate "Bewertung ändern" %}{% else %}{% translate "Bewertung schreiben" %}{% endif %}</a>
                     {% endif %}
                 </div>
 
                 {% for review in reviews %}
                     <article class="review">
                         <div class="d-flex justify-content-between">
-                            <strong>{{ review.user.username }}</strong>
+                            <!-- NEU: Name abgekürzt, z.B. fr*** -->
+                            <strong>{{ review.user.username|mask_name }}{% if review.user == user %} <span class="text-muted fw-normal small">{% translate "(du)" %}</span>{% endif %}</strong>
                             <span class="text-muted small">{{ review.created_at|date:"j. F Y" }}</span>
                         </div>
                         <div class="stars">{{ review.rating|stars }}</div>
-                        {% if review.title %}<h3 class="h6 mt-2 mb-1">{{ review.title }}</h3>{% endif %}
-                        {% if review.text %}<p class="mb-1">{{ review.text|linebreaksbr }}</p>{% endif %}
+                        {% if review.title %}<h3 class="h6 mt-2 mb-1">{{ review.display_title }}</h3>{% endif %}
+                        {% if review.text %}<p class="mb-1">{{ review.display_text|linebreaksbr }}</p>{% endif %}
+                        {% if review.is_translated %}<p class="small text-muted mb-1"><i class="bi bi-translate me-1"></i>{% translate "Automatisch übersetzt mit DeepL" %}</p>{% endif %}
                         <p class="text-muted small mb-0">
-                            {% if review.visited_on %}Besucht im {{ review.visited_on|date:"F Y" }}{% endif %}
+                            {% if review.visited_on %}{% blocktranslate with date=review.visited_on|date:"F Y" %}Besucht im {{ date }}{% endblocktranslate %}{% endif %}
                         </p>
                     </article>
                 {% empty %}
-                    <p class="text-muted">Sei die erste Person, die diese Aktivität bewertet.</p>
+                    <p class="text-muted">{% translate "Sei die erste Person, die diese Aktivität bewertet." %}</p>
                 {% endfor %}
             </section>
         </div>
@@ -164,30 +187,19 @@
             <div class="info-box">
                 <ul class="list-unstyled mb-0">
                     <li><i class="bi bi-geo-alt"></i>{{ activity.location }}</li>
-                    <li><i class="bi bi-cash-coin"></i>{% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}</li>
-                    {% if activity.duration_minutes %}<li><i class="bi bi-clock"></i>{{ activity.duration_minutes }} Min.</li>{% endif %}
+                    <li><i class="bi bi-cash-coin"></i>{{ activity.get_price_level_display }}</li>
+                    {% if activity.duration_minutes %}<li><i class="bi bi-clock"></i>{% blocktranslate with minutes=activity.duration_minutes %}{{ minutes }} Min.{% endblocktranslate %}</li>{% endif %}
                     {% if activity.event_date %}<li><i class="bi bi-calendar-event"></i>{{ activity.event_date|date:"l, j. F Y" }}</li>{% endif %}
-                    {% if activity.website %}<li><i class="bi bi-globe"></i><a href="{{ activity.website }}" target="_blank" rel="noopener">Website</a></li>{% endif %}
+                    {% if activity.website %}<li><i class="bi bi-globe"></i><a href="{{ activity.website }}" target="_blank" rel="noopener">{% translate "Website" %}</a></li>{% endif %}
                     {% if activity.phone %}<li><i class="bi bi-telephone"></i><a href="tel:{{ activity.phone }}">{{ activity.phone }}</a></li>{% endif %}
                     {% if activity.email %}<li><i class="bi bi-envelope"></i><a href="mailto:{{ activity.email }}">{{ activity.email }}</a></li>{% endif %}
                 </ul>
 
-                {% if activity.location.latitude and activity.location.longitude %}
-                    <!-- NEU: kleine Karte mit dem Ort -->
-                    <div id="detailMap" class="detail-map"
-                         data-lat="{{ activity.location.latitude|unlocalize }}"
-                         data-lon="{{ activity.location.longitude|unlocalize }}"
-                         aria-label="Karte: {{ activity.location }}"></div>
-                    <a class="small d-inline-block mt-1" target="_blank" rel="noopener"
-                       href="https://www.openstreetmap.org/?mlat={{ activity.location.latitude|unlocalize }}&mlon={{ activity.location.longitude|unlocalize }}#map=17/{{ activity.location.latitude|unlocalize }}/{{ activity.location.longitude|unlocalize }}">
-                        Grosse Karte öffnen
-                    </a>
-                {% endif %}
-
                 {% with lines=activity.opening_hours_lines %}
                 {% if lines or activity.hours_note %}
+                    <!-- NEU: Öffnungszeiten weiter oben, gleich nach Adresse und Preis -->
                     <hr>
-                    <h3 class="h6">Öffnungszeiten</h3>
+                    <h3 class="h6">{% translate "Öffnungszeiten" %}</h3>
                     {% if lines %}
                         <!-- gleiche Zeiten an mehreren Tagen sind zusammengefasst, z.B. Mo–Fr -->
                         <table class="hours-table">
@@ -197,30 +209,80 @@
                         </table>
                     {% endif %}
                     {% if activity.hours_note %}
-                        <p class="small text-muted mb-0 mt-1">{{ activity.hours_note|linebreaksbr }}</p>
+                        <p class="small text-muted mb-0 mt-1">{{ activity.display_hours_note|linebreaksbr }}</p>
                     {% endif %}
                 {% endif %}
                 {% endwith %}
 
+                {% if activity.location.latitude and activity.location.longitude %}
+                    <!-- NEU: kleine Karte mit dem Ort -->
+                    <div id="detailMap" class="detail-map"
+                         data-lat="{{ activity.location.latitude|unlocalize }}"
+                         data-lon="{{ activity.location.longitude|unlocalize }}"
+                         aria-label="{% blocktranslate with location=activity.location %}Karte: {{ location }}{% endblocktranslate %}"></div>
+                    <a class="small d-inline-block mt-1" target="_blank" rel="noopener"
+                       href="https://www.openstreetmap.org/?mlat={{ activity.location.latitude|unlocalize }}&mlon={{ activity.location.longitude|unlocalize }}#map=17/{{ activity.location.latitude|unlocalize }}/{{ activity.location.longitude|unlocalize }}">
+                        {% translate "Grosse Karte öffnen" %}
+                    </a>
+                {% endif %}
+
+                {% if route_links or activity.transport_note %}
+                    <!-- NEU: So kommst du hin. Route öffnet Google Maps mit dem eigenen Standort als Start. -->
+                    <hr>
+                    <h3 class="h6">{% translate "So kommst du hin" %}</h3>
+                    {% if route_links %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for link in route_links %}
+                                <a href="{{ link.url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm rounded-pill">
+                                    <i class="bi {{ link.icon }} me-1"></i>{{ link.label }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                        <p class="small text-muted mt-1 mb-2">{% translate "Öffnet die Route in Google Maps, Start ist dein Standort." %}</p>
+                    {% endif %}
+                    {% if bus_stops %}
+                        <ul class="bus-stops list-unstyled mb-1">
+                            {% for stop in bus_stops %}
+                                <li>
+                                    <div class="d-flex justify-content-between gap-2">
+                                        <span><i class="bi bi-bus-front me-1"></i>{{ stop.name }}</span>
+                                        <span class="text-muted small text-nowrap">{% blocktranslate with minutes=stop.minutes %}{{ minutes }} Min. zu Fuss{% endblocktranslate %}</span>
+                                    </div>
+                                    <div class="bus-lines">
+                                        {% for line in stop.lines %}
+                                            <span class="bus-line" style="background: {{ line.color }}; color: {{ line.text }};"
+                                                  title="{% blocktranslate with name=line.name %}Linie {{ name }}{% endblocktranslate %}">{{ line.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <p class="small text-muted mb-2">{% translate "Haltestellen und Linien von Imagine, dem Bus in Épinal." %}</p>
+                    {% endif %}
+                    {% if activity.transport_note %}
+                        <p class="small mb-0">{{ activity.display_transport_note|linebreaksbr }}</p>
+                    {% endif %}
+                {% endif %}
+
                 <hr>
-                <p class="small text-muted mb-0">Hinzugefügt von {{ activity.user.username }} am {{ activity.created_at|date:"j. F Y" }}</p>
+                <p class="small text-muted mb-0">{% blocktranslate trimmed with user=activity.user.username date=activity.created_at|date:"j. F Y" %}Hinzugefügt von {{ user }} am {{ date }}{% endblocktranslate %}</p>
             </div>
 
             <!-- Melden und Fehler melden: eigener Kasten, damit man es findet (nicht eingeloggt: zuerst Login) -->
             {% if activity.status == 'published' %}
             <div class="report-box mt-3">
-                <div class="fw-bold mb-2">Stimmt etwas nicht?</div>
+                <div class="fw-bold mb-2">{% translate "Stimmt etwas nicht?" %}</div>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal"
                             data-bs-target="{% if user.is_authenticated %}#errorModal{% else %}#loginModal{% endif %}">
-                        <i class="bi bi-pencil-square me-1"></i>Fehler melden
+                        <i class="bi bi-pencil-square me-1"></i>{% translate "Fehler melden" %}
                     </button>
                     <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
                             data-bs-target="{% if user.is_authenticated %}#reportModal{% else %}#loginModal{% endif %}">
-                        <i class="bi bi-flag me-1"></i>Melden
+                        <i class="bi bi-flag me-1"></i>{% translate "Melden" %}
                     </button>
                 </div>
-                <div class="small text-muted mt-2">Fehler: z.B. falsche Adresse oder Öffnungszeiten. Melden: Spam oder unpassender Inhalt, wird sofort ausgeblendet.</div>
+                <div class="small text-muted mt-2">{% translate "Fehler: z.B. falsche Adresse oder Öffnungszeiten. Melden: Spam oder unpassender Inhalt, wird sofort ausgeblendet." %}</div>
             </div>
             {% endif %}
         </div>
@@ -235,16 +297,16 @@
         <form method="post" action="{% url 'add_photos' activity.pk %}" enctype="multipart/form-data" class="modal-content">
             {% csrf_token %}
             <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
-                <h5 class="modal-title ms-3" id="photoModalLabel">Fotos hinzufügen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Schliessen" %}"></button>
+                <h5 class="modal-title ms-3" id="photoModalLabel">{% translate "Fotos hinzufügen" %}</h5>
             </div>
             <div class="modal-body">
                 {{ photo_form.photos }}
-                <div class="form-text">Bis zu 10 Fotos auf einmal, je höchstens 10 MB. Nur eigene Fotos hochladen.</div>
+                <div class="form-text">{% translate "Bis zu 10 Fotos auf einmal, je höchstens 10 MB. Nur eigene Fotos hochladen." %}</div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="submit" class="btn btn-primary">Hochladen</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Abbrechen" %}</button>
+                <button type="submit" class="btn btn-primary">{% translate "Hochladen" %}</button>
             </div>
         </form>
     </div>
@@ -256,17 +318,17 @@
         <form method="post" action="{% url 'report_error' activity.pk %}" class="modal-content">
             {% csrf_token %}
             <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
-                <h5 class="modal-title ms-3" id="errorModalLabel">Fehler melden</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Schliessen" %}"></button>
+                <h5 class="modal-title ms-3" id="errorModalLabel">{% translate "Fehler melden" %}</h5>
             </div>
             <div class="modal-body">
-                <p class="text-muted small">Stimmt etwas nicht? Sag uns, was falsch ist.</p>
+                <p class="text-muted small">{% translate "Stimmt etwas nicht? Sag uns, was falsch ist." %}</p>
                 <label for="{{ error_form.description.id_for_label }}" class="form-label">{{ error_form.description.label }}</label>
                 {{ error_form.description }}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="submit" class="btn btn-primary">Senden</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Abbrechen" %}</button>
+                <button type="submit" class="btn btn-primary">{% translate "Senden" %}</button>
             </div>
         </form>
     </div>
@@ -278,11 +340,11 @@
         <form method="post" action="{% url 'report_activity' activity.pk %}" class="modal-content">
             {% csrf_token %}
             <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
-                <h5 class="modal-title ms-3" id="reportModalLabel">Aktivität melden</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate "Schliessen" %}"></button>
+                <h5 class="modal-title ms-3" id="reportModalLabel">{% translate "Aktivität melden" %}</h5>
             </div>
             <div class="modal-body">
-                <p class="text-muted small">Warum soll diese Aktivität geprüft werden?</p>
+                <p class="text-muted small">{% translate "Warum soll diese Aktivität geprüft werden?" %}</p>
                 {% for choice in report_form.reason %}
                     <div class="form-check">{{ choice.tag }} <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></div>
                 {% endfor %}
@@ -290,21 +352,137 @@
                 {{ report_form.description }}
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="submit" class="btn btn-danger">Melden</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Abbrechen" %}</button>
+                <button type="submit" class="btn btn-danger">{% translate "Melden" %}</button>
             </div>
         </form>
+    </div>
+</div>
+{% endif %}
+
+{% if gallery %}
+<!-- NEU: Fotos gross anschauen. Klick auf ein Foto öffnet es hier, durchblättern, mit dem Kreuz schliessen. -->
+<div class="modal fade photo-viewer" id="photoViewer" tabindex="-1" aria-label="{% translate "Fotos gross" %}" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <button type="button" class="viewer-close" data-bs-dismiss="modal" aria-label="{% translate "Schliessen" %}"><i class="bi bi-x-lg"></i></button>
+            <div class="viewer-track" id="viewerTrack">
+                {% for photo in gallery %}
+                    <div class="viewer-slide">
+                        <img src="{{ photo.url }}" alt="{% blocktranslate with n=forloop.counter title=activity.display_title %}Foto {{ n }} von {{ title }}{% endblocktranslate %}" loading="lazy">
+                        {% if photo.delete_url %}
+                            <!-- NEU: eigenes Foto löschen (erster Klick fragt nach, zweiter löscht) -->
+                            <form method="post" action="{{ photo.delete_url }}" class="viewer-delete">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-light rounded-pill"
+                                        data-confirm="{% translate "Wirklich löschen?" %}">
+                                    <i class="bi bi-trash me-1"></i>{% translate "Mein Foto löschen" %}
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if gallery|length > 1 %}
+                <button type="button" class="viewer-nav viewer-prev" aria-label="{% translate "Vorheriges Foto" %}"><i class="bi bi-chevron-left"></i></button>
+                <button type="button" class="viewer-nav viewer-next" aria-label="{% translate "Nächstes Foto" %}"><i class="bi bi-chevron-right"></i></button>
+                <span class="viewer-count"><span id="viewerIndex">1</span> / {{ gallery|length }}</span>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
+<script>
+// NEU: Fotos gross (Lightbox). Klick auf ein Foto in der Galerie öffnet es, durchblättern, Kreuz oder Esc schliesst.
+document.addEventListener("DOMContentLoaded", function () {
+    const viewer = document.getElementById("photoViewer");
+    if (!viewer) return;
+    const track = document.getElementById("viewerTrack");
+    const slides = track.children.length;
+    const counter = document.getElementById("viewerIndex");
+    const modal = bootstrap.Modal.getOrCreateInstance(viewer);
+    let startIndex = 0;
+
+    const current = () => Math.round(track.scrollLeft / track.clientWidth);
+    function go(index, smooth = true) {
+        index = (index + slides) % slides;
+        track.scrollTo({ left: index * track.clientWidth, behavior: smooth ? "smooth" : "instant" });
+    }
+    document.querySelectorAll(".gallery-slide").forEach(function (link) {
+        link.addEventListener("click", function (e) {
+            e.preventDefault();  // statt neuem Tab: gross auf dieser Seite
+            startIndex = Number(link.dataset.index);
+            modal.show();
+        });
+    });
+    viewer.addEventListener("shown.bs.modal", () => go(startIndex, false));
+    // NEU: Löschen erst beim zweiten Klick
+    viewer.querySelectorAll(".viewer-delete button").forEach(function (button) {
+        button.addEventListener("click", function (e) {
+            if (button.dataset.asked) return;
+            e.preventDefault();
+            button.dataset.asked = "1";
+            button.textContent = button.dataset.confirm;
+            button.classList.replace("btn-light", "btn-danger");
+        });
+    });
+    if (counter) {
+        track.addEventListener("scroll", () => { counter.textContent = current() + 1; });
+        viewer.querySelector(".viewer-prev").addEventListener("click", () => go(current() - 1));
+        viewer.querySelector(".viewer-next").addEventListener("click", () => go(current() + 1));
+        viewer.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowRight") go(current() + 1);
+            if (e.key === "ArrowLeft") go(current() - 1);
+        });
+    }
+});
+
+// NEU: Fotos durchblättern (Pfeile, Vorschaubilder, Zähler). Wischen geht ohne JavaScript (scroll-snap im CSS).
+document.addEventListener("DOMContentLoaded", function () {
+    const track = document.getElementById("galleryTrack");
+    if (!track) return;
+    const slides = Array.from(track.children);
+    const thumbs = Array.from(document.querySelectorAll(".gallery-thumb"));
+    const counter = document.getElementById("galleryIndex");
+    if (slides.length < 2) return;
+
+    function current() {
+        return Math.round(track.scrollLeft / track.clientWidth);
+    }
+    function go(index) {
+        index = (index + slides.length) % slides.length;  // nach dem letzten wieder das erste
+        track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+    }
+    function update() {
+        const index = current();
+        counter.textContent = index + 1;
+        thumbs.forEach((t, i) => t.classList.toggle("is-active", i === index));
+    }
+    document.querySelector(".gallery-prev").addEventListener("click", () => go(current() - 1));
+    document.querySelector(".gallery-next").addEventListener("click", () => go(current() + 1));
+    thumbs.forEach(t => t.addEventListener("click", () => go(Number(t.dataset.index))));
+    let timer;
+    track.addEventListener("scroll", function () {
+        clearTimeout(timer);
+        timer = setTimeout(update, 60);
+    });
+    // Pfeiltasten, wenn die Galerie ausgewählt ist
+    track.tabIndex = 0;
+    track.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") { e.preventDefault(); go(current() + 1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); go(current() - 1); }
+    });
+});
+</script>
 {% if activity.location.latitude and activity.location.longitude %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
 // Kleine Karte mit einer Nadel beim Ort der Aktivität
+{% blocktranslate asvar osm_credit %}<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende{% endblocktranslate %}
 document.addEventListener("DOMContentLoaded", function () {
     const box = document.getElementById("detailMap");
     const point = [Number(box.dataset.lat), Number(box.dataset.lon)];
@@ -314,7 +492,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
         // Django schickt das standardmässig nicht mit, deshalb hier nur für die Kartenbilder erlauben.
         referrerPolicy: "strict-origin-when-cross-origin",
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        attribution: "&copy; {{ osm_credit|escapejs }}",
     }).addTo(map);
     // gleiche grüne Nadel wie in der Kartenansicht
     const pin = L.divIcon({ className: "map-pin", html: '<i class="bi bi-geo-alt-fill"></i>',

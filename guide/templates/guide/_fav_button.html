@@ -1,3 +1,4 @@
+{% load i18n %}
 <!-- Herz-Knopf. Eingeloggt: speichert den Favoriten (JavaScript in base.html, ohne Neuladen).
      Nicht eingeloggt: öffnet das Login-Kästchen. -->
 {% if user.is_authenticated %}
@@ -6,11 +7,11 @@
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button type="submit" class="fav-btn {% if activity.is_favorite %}is-favorite{% endif %}"
                 aria-pressed="{% if activity.is_favorite %}true{% else %}false{% endif %}"
-                aria-label="{% if activity.is_favorite %}Aus Favoriten entfernen{% else %}Zu Favoriten hinzufügen{% endif %}">
-            {% if activity.is_favorite %}♥{% else %}♡{% endif %}
+                aria-label="{% if activity.is_favorite %}{% translate "Aus Favoriten entfernen" %}{% else %}{% translate "Zu Favoriten hinzufügen" %}{% endif %}">
+            <i class="bi {% if activity.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} fav-icon"></i>
         </button>
     </form>
 {% else %}
     <button type="button" class="fav-btn" data-bs-toggle="modal" data-bs-target="#loginModal"
-            aria-label="Zum Speichern anmelden">♡</button>
+            aria-label="{% translate "Zum Speichern anmelden" %}"><i class="bi bi-heart"></i></button>
 {% endif %}

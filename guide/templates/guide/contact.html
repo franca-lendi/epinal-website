@@ -1,23 +1,26 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Kontakt – Épinal Guide{% endblock %}
+{% block title %}{% translate "Kontakt" %} – Épinal Guide{% endblock %}
+
+{% block body_class %}contact-page{% endblock %}  {# farbiger Hintergrund wie bei Über mich #}
 
 {% block content %}
 <div class="row g-5">
 
     <!-- Links: Kontaktdaten -->
     <div class="col-lg-5">
-        <h1 class="mb-2">Kontakt</h1>
-        <p class="text-muted">Du hast eine Frage, einen Tipp für eine Aktivität oder etwas funktioniert nicht? Schreib mir.</p>
+        <h1 class="mb-2">{% translate "Kontakt" %}</h1>
+        <p class="text-muted">{% translate "Du hast eine Frage, einen Tipp für eine Aktivität oder etwas funktioniert nicht? Schreib mir." %}</p>
 
         <div class="d-flex align-items-center gap-3 my-4">
             {% if info.photo %}
-                <img src="{{ info.photo.url }}" alt="Foto von {{ info.name|default:'mir' }}" class="about-photo about-photo-sm">
+                <img src="{{ info.photo.url }}" alt="{% if info.name %}{% blocktranslate with name=info.name %}Foto von {{ name }}{% endblocktranslate %}{% else %}{% translate "Foto von mir" %}{% endif %}" class="about-photo about-photo-sm">
             {% endif %}
             <div>
                 {% if info.name %}<div class="fw-semibold">{{ info.name }}</div>{% endif %}
                 {% if info.tagline %}<div class="small text-muted">{{ info.tagline }}</div>{% endif %}
-                <a href="{% url 'about' %}" class="small">Mehr über mich</a>
+                <a href="{% url 'about' %}" class="small">{% translate "Mehr über mich" %}</a>
             </div>
         </div>
 
@@ -32,18 +35,18 @@
             {% if info.other_link %}
                 <li><i class="bi bi-link-45deg"></i><a href="{{ info.other_link }}" target="_blank" rel="noopener">{{ info.other_link }}</a></li>
             {% endif %}
-            <li><i class="bi bi-geo-alt"></i>Épinal, Vosges (Frankreich)</li>
+            <li><i class="bi bi-geo-alt"></i>{% translate "Épinal, Vosges (Frankreich)" %}</li>
         </ul>
 
         {% if user.is_staff and not info.email and not info.instagram %}
-            <p class="small text-muted">Noch keine Kontaktdaten eingetragen. <a href="{% url 'about_edit' %}">Jetzt ergänzen</a></p>
+            <p class="small text-muted">{% translate "Noch keine Kontaktdaten eingetragen." %} <a href="{% url 'about_edit' %}">{% translate "Jetzt ergänzen" %}</a></p>
         {% endif %}
     </div>
 
     <!-- Rechts: Formular -->
     <div class="col-lg-7">
         <div class="contact-box">
-            <h2 class="h5 mb-3">Nachricht schreiben</h2>
+            <h2 class="h5 mb-3">{% translate "Nachricht schreiben" %}</h2>
             <form method="post" novalidate>
                 {% csrf_token %}
                 <div class="row g-3">
@@ -56,7 +59,7 @@
                 <!-- Spam-Falle: für Menschen unsichtbar -->
                 <div class="visually-hidden" aria-hidden="true">{{ form.website }}</div>
 
-                <button type="submit" class="btn btn-dark rounded-pill px-4">Senden</button>
+                <button type="submit" class="btn btn-dark rounded-pill px-4">{% translate "Senden" %}</button>
             </form>
         </div>
     </div>

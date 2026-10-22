@@ -17,6 +17,8 @@ urlpatterns = [
 
     path("activities/<int:pk>/photos/", views.add_photos, name="add_photos"),
 
+    path("photos/<int:pk>/delete/", views.delete_photo, name="delete_photo"),  # NEU
+
     path("activities/<int:pk>/report/", views.report_activity, {"kind": "report"}, name="report_activity"),
 
     path("activities/<int:pk>/error/", views.report_activity, {"kind": "error"}, name="report_error"),
@@ -31,6 +33,16 @@ urlpatterns = [
     path("activities/<int:pk>/approve/", views.approve_activity, name="approve_activity"),
     path("categories/<int:pk>/approve/", views.approve_category, name="approve_category"),
     path("reports/<int:pk>/done/", views.resolve_report, name="resolve_report"),
+    # NEU: Zurückschicken und Verwerfen
+    path("activities/<int:pk>/return/", views.return_activity, name="return_activity"),
+    path("reports/<int:pk>/return/", views.return_report, name="return_report"),
+    path("categories/<int:pk>/reject/", views.reject_category, name="reject_category"),
+
+    # NEU: Mein Profil
+    path("profile/", views.profile, name="profile"),
+
+    # NEU: Mitteilungen (Glocke)
+    path("notifications/", views.notifications, name="notifications"),
 
     path("favorites/", views.favorites, name="favorites"),
 

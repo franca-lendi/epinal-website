@@ -3,8 +3,10 @@ import datetime
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.utils.formats import date_format
+from django.utils.translation import gettext_lazy as _
 
-from .models import WEEKDAYS, Activity, Category, ContactMessage, Report, SiteInfo
+from .models import WEEKDAYS, Activity, ActivityImage, Category, ContactMessage, Report, SiteInfo
 
 
 class RegisterForm(UserCreationForm):
@@ -23,63 +25,97 @@ class RegisterForm(UserCreationForm):
         username = self.cleaned_data["username"]
         # Kein @ im Benutzernamen, sonst könnte man ihn beim Login mit einer E-Mail verwechseln
         if "@" in username:
-            raise forms.ValidationError("Der Benutzername darf kein @ enthalten.")
+            raise forms.ValidationError(_("Der Benutzername darf kein @ enthalten."))
         return username
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("Diese E-Mail ist schon registriert.")
+            raise forms.ValidationError(_("Diese E-Mail ist schon registriert."))
+        return email
+
+
+# ---------- NEU: Profil (Benutzername und E-Mail ändern) ----------
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["username", "email"]
+        labels = {"username": _("Benutzername"), "email": _("E-Mail")}
+        help_texts = {"username": _("Bei Bewertungen erscheinen nur die ersten Buchstaben, z.B. fr***.")}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = True
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control"
+
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        if "@" in username:  # gleiche Regel wie bei der Registrierung
+            raise forms.ValidationError(_("Der Benutzername darf kein @ enthalten."))
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower()
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError(_("Diese E-Mail ist schon registriert."))
         return email
 
 
 class ActivityForm(forms.ModelForm):
     # Diese Felder gehören zur Location, nicht zur Activity.
     # Die Adresssuche (JavaScript in add_activity.html) füllt sie automatisch aus.
-    address = forms.CharField(label="Adresse", max_length=255, required=False)
-    postal_code = forms.CharField(label="PLZ", max_length=10, required=False)
-    city = forms.CharField(label="Ort", max_length=100, initial="Épinal")
+    address = forms.CharField(label=_("Adresse"), max_length=255, required=False)
+    postal_code = forms.CharField(label=_("PLZ"), max_length=10, required=False)
+    city = forms.CharField(label=_("Ort"), max_length=100, initial="Épinal")
     latitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
     longitude = forms.DecimalField(max_digits=10, decimal_places=7, required=False, widget=forms.HiddenInput)
 
     # Welche Felder zu Schritt 2 gehören (für die Fehleranzeige)
-    STEP2_FIELDS = {"website", "phone", "email", "hours_note", "hours_always"} | {
-        f"hours_{code}_{part}" for code, _, _ in WEEKDAYS
+    STEP2_FIELDS = {"website", "phone", "email", "hours_note", "hours_always", "transport_note"} | {
+        f"hours_{code}_{part}" for code, _short, _name in WEEKDAYS
         for part in ("closed", "open1", "close1", "open2", "close2")
     }
 
     class Meta:
         model = Activity
         fields = [
-            "title", "description", "price", "duration_minutes",
-            "event_date", "image",
-            "website", "phone", "email", "hours_note",
+            "title", "description", "price_level", "duration_minutes",
+            "event_date",
+            "website", "phone", "email", "hours_note", "transport_note",
         ]
         labels = {
-            "title": "Name",
-            "description": "Beschreibung",
-            "price": "Preis in €",
-            "duration_minutes": "Dauer in Minuten",
-            "event_date": "Datum (nur bei Events)",
-            "image": "Foto",
-            "website": "Website",
-            "phone": "Telefonnummer",
-            "email": "E-Mail-Adresse",
-            "hours_note": "Bemerkung",
+            "title": _("Name"),
+            "description": _("Beschreibung"),
+            "price_level": _("Preis"),
+            "duration_minutes": _("Dauer in Minuten"),
+            "event_date": _("Datum (nur bei Events)"),
+            "website": _("Website"),
+            "phone": _("Telefonnummer"),
+            "email": _("E-Mail-Adresse"),
+            "hours_note": _("Bemerkung"),
+            "transport_note": _("So kommst du hin"),
         }
         help_texts = {
-            "price": "0 = kostenlos",
+            "price_level": _("Ungefähr, pro Person."),
+            "transport_note": _("Die nächsten Bushaltestellen und die Route zeigen wir automatisch an. "
+                                "Schreib hier nur, was man sonst noch wissen muss."),
         }
         widgets = {
             "description": forms.Textarea(attrs={
                 "rows": 4,
-                "placeholder": "Was kann man hier machen? Was ist speziell?",  # hellgrauer Hinweis im leeren Feld
+                "placeholder": _("Was kann man hier machen? Was ist speziell?"),  # hellgrauer Hinweis im leeren Feld
             }),
             "hours_note": forms.Textarea(attrs={
                 "rows": 2,
-                "placeholder": "z.B. an Feiertagen geschlossen, im Winter nur bis 17:00",
+                "placeholder": _("z.B. an Feiertagen geschlossen, im Winter nur bis 17:00"),
             }),
             "event_date": forms.DateInput(attrs={"type": "date"}),
+            "price_level": forms.RadioSelect,  # als Knöpfe (siehe add_activity.html)
+            "transport_note": forms.Textarea(attrs={
+                "rows": 2,
+                "placeholder": _("z.B. Eingang hinter dem Parkplatz, letzter Bus fährt um 20:00"),
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -89,27 +125,107 @@ class ActivityForm(forms.ModelForm):
             field.widget.attrs["class"] = css
         self.setup_categories()
         self.setup_opening_hours()
-        self.fields["price"].initial = 0
-        # NEU: Foto ist zum Senden Pflicht, für einen Entwurf nicht (Prüfung in clean).
+        self.setup_photos()
+        # NEU: Preis bei einer neuen Aktivität nicht vorwählen, man soll bewusst eine Stufe antippen
+        self.fields["price_level"].error_messages["required"] = _("Bitte wähle einen Preis.")
+        if not self.instance.pk:
+            self.initial["price_level"] = None
+
+    # ---------- NEU: mehrere Fotos auf einmal ----------
+    def setup_photos(self):
+        # Das erste Foto wird das Titelbild (Activity.image), die anderen kommen zu den Fotos (ActivityImage).
+        # Foto ist zum Senden Pflicht, für einen Entwurf nicht (Prüfung in clean).
         # Darum nicht required=True (sonst ginge kein Entwurf ohne Foto), aber ohne «(optional)» anzeigen.
-        self.fields["image"].show_as_required = True
-        self.fields["image"].help_text = "Bitte nur eigene Fotos. Für einen Entwurf kannst du es auch später hinzufügen."
+        self.fields["photos"] = MultipleImageField(
+            label=_("Fotos"), required=False,
+            help_text=_("Du kannst mehrmals Fotos auswählen (höchstens %(max)s auf einmal). "
+                        "Mit «Als Titelbild» bestimmst du das Titelbild. Bitte nur eigene Fotos.") % {"max": MAX_PHOTOS},
+        )
+        self.fields["photos"].show_as_required = True
+        # beim Bearbeiten: die vorhandenen Fotos mit Häkchen zum Entfernen
+        self.existing_photos = []
+        if self.instance.pk:
+            if self.instance.image:
+                self.existing_photos.append({"value": "cover", "url": self.instance.image.url, "cover": True})
+            for photo in self.instance.images.filter(user=self.instance.user).order_by("created_at"):
+                self.existing_photos.append({"value": str(photo.pk), "url": photo.image.url, "cover": False})
+        self.fields["delete_photos"] = forms.MultipleChoiceField(
+            required=False, choices=[(p["value"], p["value"]) for p in self.existing_photos],
+        )
+        # NEU: welches Foto das Titelbild ist ("new:2" = drittes neues Foto, "15" = vorhandenes Foto Nr. 15)
+        # und welcher Ausschnitt davon zu sehen ist ("50% 30%"). Beides füllt das JavaScript aus.
+        self.fields["cover_choice"] = forms.CharField(required=False, widget=forms.HiddenInput)
+        self.fields["image_position"] = forms.RegexField(
+            regex=r"^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$", required=False, widget=forms.HiddenInput,
+        )
+        if self.instance.pk:
+            self.initial["image_position"] = self.instance.image_position
+
+    def clean_photos(self):
+        return check_photos(self.cleaned_data["photos"])
+
+    def save_photos(self, activity, user):
+        # Nach dem Speichern der Aktivität aufrufen (die Fotos brauchen ihre id)
+        delete = set(self.cleaned_data.get("delete_photos") or [])
+        old_cover = activity.image.name if activity.image else ""
+        if "cover" in delete:
+            activity.image = None
+        ActivityImage.objects.filter(activity=activity, user=activity.user,
+                                     pk__in=[v for v in delete if v.isdigit()]).delete()
+        new_photos = list(self.cleaned_data.get("photos") or [])
+
+        def move_cover_to_photos():
+            # bisheriges Titelbild bleibt als normales Foto erhalten
+            if activity.image:
+                ActivityImage.objects.create(activity=activity, user=activity.user, image=activity.image.name)
+
+        # NEU: selbst gewähltes Titelbild
+        choice = self.cleaned_data.get("cover_choice") or ""
+        if choice.startswith("new:") and choice[4:].isdigit() and int(choice[4:]) < len(new_photos):
+            move_cover_to_photos()
+            activity.image = new_photos.pop(int(choice[4:]))
+        elif choice.isdigit():
+            chosen = activity.images.filter(pk=choice, user=activity.user).first()
+            if chosen:
+                move_cover_to_photos()
+                activity.image = chosen.image.name
+                chosen.delete()
+
+        if not activity.image and new_photos:
+            activity.image = new_photos.pop(0)  # sonst: erstes neues Foto = Titelbild
+        for photo in new_photos:
+            ActivityImage.objects.create(activity=activity, user=user, image=photo)
+        if not activity.image:
+            # Titelbild entfernt: das nächste eigene Foto wird Titelbild
+            first = activity.images.filter(user=activity.user).order_by("created_at").first()
+            if first:
+                activity.image = first.image.name
+                first.delete()
+
+        # NEU: Bildausschnitt. Neues Titelbild ohne gewählten Ausschnitt: Mitte.
+        position = self.cleaned_data.get("image_position")
+        new_cover = (activity.image.name if activity.image else "") != old_cover
+        if position:
+            activity.image_position = position
+        elif new_cover:
+            activity.image_position = "50% 50%"
+        activity.save(update_fields=["image", "image_position"])
 
     # ---------- NEU: Öffnungszeiten pro Wochentag ----------
     def setup_opening_hours(self):
         # Pro Tag: geschlossen (Häkchen), erste Zeit (open1-close1) und eine zweite nach einer Pause (open2-close2)
         self.fields["hours_always"] = forms.BooleanField(
-            required=False, label="Immer offen (24/7)",
+            required=False, label=_("Immer offen (24/7)"),
             widget=forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
         )
         time_widget = {"type": "time", "class": "form-control form-control-sm hours-time"}
         for code, _short, name in WEEKDAYS:
             self.fields[f"hours_{code}_closed"] = forms.BooleanField(
-                required=False, label="geschlossen",
+                required=False, label=_("geschlossen"),
                 widget=forms.CheckboxInput(attrs={"class": "form-check-input hours-closed"}),
             )
             for n in (1, 2):
-                for part, label in (("open", "von"), ("close", "bis")):
+                for part, label in (("open", _("von")), ("close", _("bis"))):
                     self.fields[f"hours_{code}_{part}{n}"] = forms.TimeField(
                         required=False, label=f"{name} {label}",
                         widget=forms.TimeInput(attrs=time_widget, format="%H:%M"),
@@ -154,11 +270,11 @@ class ActivityForm(forms.ModelForm):
                 end = cleaned.get(f"hours_{code}_close{n}")
                 if start and end:
                     if start == end:
-                        self.add_error(f"hours_{code}_open{n}", f"{name}: Beginn und Ende sind gleich.")
+                        self.add_error(f"hours_{code}_open{n}", _("%(day)s: Beginn und Ende sind gleich.") % {"day": name})
                     # Ende vor Beginn ist erlaubt: geht über Mitternacht (z.B. Bar 18:00–02:00)
                     slots.append([start.strftime("%H:%M"), end.strftime("%H:%M")])
                 elif start or end:
-                    self.add_error(f"hours_{code}_open{n}", f"{name}: bitte Beginn und Ende angeben.")
+                    self.add_error(f"hours_{code}_open{n}", _("%(day)s: bitte Beginn und Ende angeben.") % {"day": name})
             if slots:
                 days[code] = {"closed": False, "slots": slots}
         return {"always_open": False, "days": days} if days else None
@@ -173,6 +289,7 @@ class ActivityForm(forms.ModelForm):
     def setup_categories(self):
         # Bis zu 3 Kategorien. Pro Kategorie: Hauptkategorie im Dropdown (main_1, main_2, main_3),
         # danach «Genauer?» mit den Unterkategorien dieser Hauptkategorie (sub_1, sub_2, sub_3, freiwillig).
+        # Bei «Genauer?» kann man mehrere antippen, z.B. Restaurant und Café.
         current = list(self.instance.categories.select_related("parent")) if self.instance.pk else []
         all_categories = list(Category.objects.order_by("position", "name"))
         current_mains = {c.parent_id or c.pk for c in current}
@@ -185,35 +302,39 @@ class ActivityForm(forms.ModelForm):
         sub_ids = [sub.pk for main in mains for sub in main.subs]
 
         # Dropdown: alle Hauptkategorien, zuletzt «Keine passt? Eigene hinzufügen» (Wert "new")
-        main_choices = [("", "Kategorie wählen")]
-        main_choices += [(main.pk, main.name if main.approved else f"{main.name} (Vorschlag)") for main in mains]
-        main_choices += [("new", "+ Keine passt? Eigene hinzufügen")]
+        main_choices = [("", _("Kategorie wählen"))]
+        main_choices += [(main.pk, main.display_name if main.approved else "%s (%s)" % (main.display_name, _("Vorschlag")))
+                         for main in mains]
+        main_choices += [("new", _("+ Keine passt? Eigene hinzufügen"))]
 
         for i in range(1, self.MAX_CATEGORIES + 1):
             self.fields[f"main_{i}"] = forms.ChoiceField(
                 choices=main_choices,
                 required=(i == 1),
-                label="Kategorie" if i == 1 else f"{i}. Kategorie",
-                error_messages={"required": "Bitte wähle eine Kategorie."},
+                label=_("Kategorie") if i == 1 else _("%(n)s. Kategorie") % {"n": i},
+                error_messages={"required": _("Bitte wähle eine Kategorie.")},
                 widget=forms.Select(attrs={"class": "form-select cat-main-select"}),
             )
-            self.fields[f"sub_{i}"] = forms.ModelChoiceField(
+            self.fields[f"sub_{i}"] = forms.ModelMultipleChoiceField(
                 queryset=Category.objects.filter(pk__in=sub_ids), required=False,
             )
             # NEU: eigener Vorschlag in dieser Zeile, wenn bei «Genauer?» «Eigene hinzufügen» gewählt ist
             self.fields[f"new_{i}"] = forms.CharField(
-                label="Was fehlt?", max_length=60, required=False,
-                help_text="Wir schauen uns deinen Vorschlag an und nehmen ihn in die Liste auf.",
-                widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "z.B. Rudern, Bäckerei …"}),
+                label=_("Was fehlt?"), max_length=60, required=False,
+                help_text=_("Wir schauen uns deinen Vorschlag an und nehmen ihn in die Liste auf."),
+                widget=forms.TextInput(attrs={"class": "form-control", "placeholder": _("z.B. Rudern, Bäckerei …")}),
             )
 
-        # beim Bearbeiten: gespeicherte Kategorien in die Zeilen eintragen
-        for i, category in enumerate(current[:self.MAX_CATEGORIES], start=1):
+        # beim Bearbeiten: gespeicherte Kategorien in die Zeilen eintragen,
+        # Unterkategorien derselben Hauptkategorie zusammen in eine Zeile (z.B. Restaurant und Café)
+        rows = {}  # Hauptkategorie -> Liste der gewählten Unterkategorien
+        for category in current:
+            rows.setdefault(category.parent_id or category.pk, [])
             if category.parent_id:
-                self.initial[f"main_{i}"] = category.parent_id
-                self.initial[f"sub_{i}"] = category.pk
-            else:
-                self.initial[f"main_{i}"] = category.pk
+                rows[category.parent_id].append(category.pk)
+        for i, (main_id, subs) in enumerate(list(rows.items())[:self.MAX_CATEGORIES], start=1):
+            self.initial[f"main_{i}"] = main_id
+            self.initial[f"sub_{i}"] = subs
 
     @property
     def category_rows(self):
@@ -221,13 +342,13 @@ class ActivityForm(forms.ModelForm):
         rows = []
         for i in range(1, self.MAX_CATEGORIES + 1):
             main_value = self[f"main_{i}"].value()
-            sub_value = self[f"sub_{i}"].value()
+            sub_values = [str(v) for v in (self[f"sub_{i}"].value() or [])]
             rows.append({
                 "i": i,
                 "main": self[f"main_{i}"],
                 "new": self[f"new_{i}"],
                 "main_value": str(main_value) if main_value else "",
-                "sub_value": str(sub_value) if sub_value else "",
+                "sub_values": sub_values,  # alle angetippten Unterkategorien (als Text)
                 "hidden": i > 1 and not main_value,  # 2. und 3. Zeile erst nach Klick auf «Weitere Kategorie»
             })
         return rows
@@ -236,15 +357,15 @@ class ActivityForm(forms.ModelForm):
         cleaned = super().clean()
         # Ohne Koordinaten gehen Distanzfilter und Karte nicht, deshalb Pflicht
         if cleaned.get("latitude") is None or cleaned.get("longitude") is None:
-            self.add_error("address", "Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte.")
+            self.add_error("address", _("Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte."))
         cleaned["opening_hours"] = self.build_opening_hours(cleaned)
 
         # NEU: Foto Pflicht beim Senden (Knopf «Als Entwurf speichern» heisst save_draft)
         if "save_draft" not in self.data:
-            image = cleaned.get("image")  # neue Datei, None = nichts geändert, False = gelöscht
-            has_photo = bool(image) or (image is None and bool(self.instance.image))
-            if not has_photo:
-                self.add_error("image", "Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht.")
+            delete = set(cleaned.get("delete_photos") or [])
+            kept = [p for p in self.existing_photos if p["value"] not in delete]
+            if not cleaned.get("photos") and not kept and "photos" not in self.errors:
+                self.add_error("photos", _("Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht."))
 
         # Kategorien aus den Zeilen zusammensetzen: Unterkategorie, wenn gewählt, sonst die Hauptkategorie
         categories = []
@@ -260,24 +381,25 @@ class ActivityForm(forms.ModelForm):
                 if text:
                     suggestions.append((None, text, None))
                 else:
-                    self.add_error(f"new_{i}", "Schreib kurz, was fehlt.")
+                    self.add_error(f"new_{i}", _("Schreib kurz, was fehlt."))
                 continue
             main = self.mains_by_id[value]
             # jede Hauptkategorie nur einmal (im Dropdown ist sie dann auch schon ausgegraut)
             if main.pk in chosen_mains:
-                self.add_error(f"main_{i}", "Diese Kategorie hast du schon gewählt.")
+                self.add_error(f"main_{i}", _("Diese Kategorie hast du schon gewählt."))
                 continue
             chosen_mains.add(main.pk)
-            sub = cleaned.get(f"sub_{i}")
-            category = sub if sub and sub.parent_id == main.pk else main
-            if category not in categories:  # zweimal das Gleiche nur einmal speichern
-                categories.append(category)
-            # Vorschlag nur verwenden, wenn in dieser Zeile wirklich «Eigene hinzufügen» (= «Andere») gewählt ist
-            if category.name == "Andere":
-                if text:
-                    suggestions.append((category.parent, text, category))
-                else:
-                    self.add_error(f"new_{i}", "Schreib kurz, was fehlt.")
+            # alle angetippten Unterkategorien dieser Hauptkategorie, keine angetippt = die Hauptkategorie allgemein
+            subs = [sub for sub in (cleaned.get(f"sub_{i}") or []) if sub.parent_id == main.pk]
+            for category in subs or [main]:
+                if category not in categories:  # zweimal das Gleiche nur einmal speichern
+                    categories.append(category)
+                # Vorschlag nur verwenden, wenn in dieser Zeile wirklich «Eigene hinzufügen» (= «Andere») gewählt ist
+                if category.name == "Andere":
+                    if text:
+                        suggestions.append((category.parent, text, category))
+                    else:
+                        self.add_error(f"new_{i}", _("Schreib kurz, was fehlt."))
         cleaned["categories"] = categories
         cleaned["suggestions"] = suggestions
         return cleaned
@@ -311,17 +433,17 @@ class MultipleImageField(forms.ImageField):
 
 
 def check_photos(photos):
-    # Gemeinsame Prüfung für "Fotos hinzufügen" und "Bewerten"
+    # Gemeinsame Prüfung für _("Fotos hinzufügen") und "Bewerten"
     if len(photos) > MAX_PHOTOS:
-        raise forms.ValidationError(f"Höchstens {MAX_PHOTOS} Fotos auf einmal.")
+        raise forms.ValidationError(_("Höchstens %(max)s Fotos auf einmal.") % {"max": MAX_PHOTOS})
     for photo in photos:
         if photo.size > MAX_PHOTO_SIZE:
-            raise forms.ValidationError(f"{photo.name} ist grösser als 10 MB.")
+            raise forms.ValidationError(_("%(name)s ist grösser als 10 MB.") % {"name": photo.name})
     return photos
 
 
 class PhotoForm(forms.Form):
-    photos = MultipleImageField(label="Fotos auswählen")
+    photos = MultipleImageField(label=_("Fotos auswählen"))
 
     def clean_photos(self):
         return check_photos(self.cleaned_data["photos"])
@@ -330,8 +452,6 @@ class PhotoForm(forms.Form):
 
 # ---------- NEU: Bewerten (wie bei Tripadvisor) ----------
 
-GERMAN_MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni",
-                 "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
 
 def last_12_months():
@@ -339,8 +459,9 @@ def last_12_months():
     today = datetime.date.today()
     year, month = today.year, today.month
     months = []
-    for _ in range(12):
-        months.append((f"{year}-{month:02d}", f"{GERMAN_MONTHS[month - 1]} {year}"))
+    for _i in range(12):
+        # Monatsname in der gewählten Sprache (Oktober 2026 / octobre 2026)
+        months.append((f"{year}-{month:02d}", date_format(datetime.date(year, month, 1), "F Y")))
         month -= 1
         if month == 0:
             month, year = 12, year - 1
@@ -350,29 +471,29 @@ def last_12_months():
 class ReviewForm(forms.Form):
     # Reihenfolge hier = Reihenfolge im Formular
     rating = forms.TypedChoiceField(
-        label="Wie würdest du deine Erfahrung bewerten?",
+        label=_("Wie würdest du deine Erfahrung bewerten?"),
         choices=[(i, i) for i in range(1, 6)],
         coerce=int,
         widget=forms.RadioSelect,
-        error_messages={"required": "Bitte wähle 1 bis 5 Sterne."},
+        error_messages={"required": _("Bitte wähle 1 bis 5 Sterne.")},
     )
-    visited = forms.ChoiceField(label="Wann warst du dort?")
+    visited = forms.ChoiceField(label=_("Wann warst du dort?"))
     title = forms.CharField(
-        label="Titel deiner Bewertung",
+        label=_("Titel deiner Bewertung"),
         max_length=150,
         widget=forms.TextInput(attrs={"class": "form-control",
-                                      "placeholder": "Wie würdest du deine Erfahrung zusammenfassen?"}),
+                                      "placeholder": _("Wie würdest du deine Erfahrung zusammenfassen?")}),
     )
     text = forms.CharField(
-        label="Schreib deine Bewertung",
+        label=_("Schreib deine Bewertung"),
         required=False,  # freiwillig: Sterne und Titel reichen
         widget=forms.Textarea(attrs={"rows": 5, "class": "form-control",
-                                     "placeholder": "Teile deine Erfahrung ..."}),
+                                     "placeholder": _("Teile deine Erfahrung ...")}),
     )
-    photos = MultipleImageField(label="Fotos hinzufügen", required=False)  # freiwillig
+    photos = MultipleImageField(label=_("Fotos hinzufügen"), required=False)  # freiwillig
     confirm = forms.BooleanField(
-        label="Ich bestätige, dass diese Bewertung auf meiner eigenen Erfahrung beruht und ehrlich ist.",
-        error_messages={"required": "Bitte bestätige das Kästchen."},
+        label=_("Ich bestätige, dass diese Bewertung auf meiner eigenen Erfahrung beruht und ehrlich ist."),
+        error_messages={"required": _("Bitte bestätige das Kästchen.")},
     )
 
     def __init__(self, *args, **kwargs):
@@ -402,8 +523,8 @@ class ReportForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
         }
         labels = {
-            "reason": "Grund",
-            "description": "Was genau?",
+            "reason": _("Grund"),
+            "description": _("Was genau?"),
         }
 
     def __init__(self, *args, kind="report", **kwargs):
@@ -413,12 +534,12 @@ class ReportForm(forms.ModelForm):
             # Fehler melden: Grund ist immer "error", dafür muss man beschreiben, was falsch ist
             del self.fields["reason"]
             self.fields["description"].required = True
-            self.fields["description"].label = "Was ist falsch? (z.B. Adresse, Öffnungszeiten, Preis)"
+            self.fields["description"].label = _("Was ist falsch? (z.B. Adresse, Öffnungszeiten, Preis)")
         else:
             self.fields["reason"].choices = [
                 (key, label) for key, label in Report.REASON_CHOICES if key in self.REPORT_REASONS
             ]
-            self.fields["description"].label = "Was genau? (freiwillig)"
+            self.fields["description"].label = _("Was genau? (freiwillig)")
 
     def save(self, commit=True):
         if self.kind == "error":
@@ -437,8 +558,8 @@ class SiteInfoForm(forms.ModelForm):
             "text": forms.Textarea(attrs={"rows": 10}),
         }
         help_texts = {
-            "text": "Leere Zeile = neuer Absatz.",
-            "email": "Erscheint auf der Kontaktseite. Leer lassen, wenn du sie nicht zeigen willst.",
+            "text": _("Leere Zeile = neuer Absatz."),
+            "email": _("Erscheint auf der Kontaktseite. Leer lassen, wenn du sie nicht zeigen willst."),
         }
 
     def __init__(self, *args, **kwargs):
@@ -457,10 +578,13 @@ class ContactForm(forms.ModelForm):
         model = ContactMessage
         fields = ["name", "email", "topic", "message"]
         labels = {
-            "name": "Dein Name",
-            "email": "Deine E-Mail",
-            "topic": "Worum geht es?",
-            "message": "Nachricht",
+            "name": _("Dein Name"),
+            "email": _("Deine E-Mail"),
+            "topic": _("Worum geht es?"),
+            "message": _("Nachricht"),
+        }
+        help_texts = {
+            "email": _("Meine Antwort kommt per E-Mail an diese Adresse."),  # NEU
         }
         widgets = {
             "message": forms.Textarea(attrs={"rows": 6}),
@@ -474,6 +598,6 @@ class ContactForm(forms.ModelForm):
 
     def clean_website(self):
         if self.cleaned_data.get("website"):
-            raise forms.ValidationError("Spam erkannt.")
+            raise forms.ValidationError(_("Spam erkannt."))
         return ""
 

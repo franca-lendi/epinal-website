@@ -1,10 +1,11 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Registrieren – Épinal Guide{% endblock %}
+{% block title %}{% translate "Registrieren" %} – Épinal Guide{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 400px;">
-    <h1 class="h3 mb-4 text-center">Konto erstellen</h1>
+    <h1 class="h3 mb-4 text-center">{% translate "Konto erstellen" %}</h1>
 
     <form method="post">
         {% csrf_token %}
@@ -19,11 +20,11 @@
         </div>
         {% endfor %}
 
-        <button type="submit" class="btn btn-primary w-100">Registrieren</button>
+        <button type="submit" class="btn btn-primary w-100">{% translate "Registrieren" %}</button>
     </form>
 
     <p class="text-center mt-3">
-        Schon ein Konto? <a href="{% url 'login' %}">Einloggen</a>
+        {% translate "Schon ein Konto?" %} <a href="{% url 'login' %}">{% translate "Einloggen" %}</a>
     </p>
 </div>
 {% endblock %}

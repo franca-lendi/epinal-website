@@ -1,6 +1,9 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Über mich – Épinal Guide{% endblock %}
+{% block title %}{% translate "Über mich" %} – Épinal Guide{% endblock %}
+
+{% block body_class %}about-page{% endblock %}  {# farbiger Hintergrund nur auf dieser Seite #}
 
 {% block content %}
 <div class="about">
@@ -9,7 +12,7 @@
         <!-- nur für dich (Admin) sichtbar -->
         <div class="d-flex justify-content-end mb-3">
             <a href="{% url 'about_edit' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-pencil me-1"></i>Bearbeiten
+                <i class="bi bi-pencil me-1"></i>{% translate "Bearbeiten" %}
             </a>
         </div>
     {% endif %}
@@ -19,7 +22,7 @@
         <!-- Links: Foto und Name wie bei einer Autorenseite -->
         <div class="col-md-4 text-center">
             {% if info.photo %}
-                <img src="{{ info.photo.url }}" alt="Foto von {{ info.name|default:'mir' }}" class="about-photo">
+                <img src="{{ info.photo.url }}" alt="{% if info.name %}{% blocktranslate with name=info.name %}Foto von {{ name }}{% endblocktranslate %}{% else %}{% translate "Foto von mir" %}{% endif %}" class="about-photo">
             {% else %}
                 <div class="about-photo about-photo-empty"><i class="bi bi-person"></i></div>
             {% endif %}
@@ -27,15 +30,15 @@
             {% if info.name %}
                 <h1 class="about-name mt-3 mb-1">{{ info.name }}</h1>
             {% elif user.is_staff %}
-                <p class="text-muted mt-3 mb-1">Noch kein Name. Klick oben auf «Bearbeiten».</p>
+                <p class="text-muted mt-3 mb-1">{% translate "Noch kein Name. Klick oben auf «Bearbeiten»." %}</p>
             {% endif %}
             {% if info.tagline %}<p class="text-muted">{{ info.tagline }}</p>{% endif %}
 
             <!-- Links zu mir, nur wenn ausgefüllt -->
             <div class="d-flex justify-content-center gap-3 fs-4">
-                {% if info.email %}<a href="mailto:{{ info.email }}" class="about-social" aria-label="E-Mail"><i class="bi bi-envelope"></i></a>{% endif %}
+                {% if info.email %}<a href="mailto:{{ info.email }}" class="about-social" aria-label="{% translate "E-Mail" %}"><i class="bi bi-envelope"></i></a>{% endif %}
                 {% if info.instagram %}<a href="https://instagram.com/{{ info.instagram }}" target="_blank" rel="noopener" class="about-social" aria-label="Instagram"><i class="bi bi-instagram"></i></a>{% endif %}
-                {% if info.other_link %}<a href="{{ info.other_link }}" target="_blank" rel="noopener" class="about-social" aria-label="Weiterer Link"><i class="bi bi-link-45deg"></i></a>{% endif %}
+                {% if info.other_link %}<a href="{{ info.other_link }}" target="_blank" rel="noopener" class="about-social" aria-label="{% translate "Weiterer Link" %}"><i class="bi bi-link-45deg"></i></a>{% endif %}
             </div>
         </div>
 
@@ -49,32 +52,32 @@
                 <div class="col-6 col-md-3">
                     <div class="about-stat">
                         <span class="about-stat-number">{{ stats.activities }}</span>
-                        <span class="about-stat-label">Aktivitäten</span>
+                        <span class="about-stat-label">{% translate "Aktivitäten" %}</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="about-stat">
                         <span class="about-stat-number">{{ stats.ratings }}</span>
-                        <span class="about-stat-label">Bewertungen</span>
+                        <span class="about-stat-label">{% translate "Bewertungen" %}</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="about-stat">
                         <span class="about-stat-number">{{ stats.categories }}</span>
-                        <span class="about-stat-label">Kategorien</span>
+                        <span class="about-stat-label">{% translate "Kategorien" %}</span>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="about-stat">
                         <span class="about-stat-number">{{ stats.visitors }}</span>
-                        <span class="about-stat-label">Besucher:innen</span>
+                        <span class="about-stat-label">{% translate "Besucher:innen" %}</span>
                     </div>
                 </div>
             </div>
 
             <div class="d-flex flex-wrap gap-2 mt-4">
-                <a href="{% url 'activities' %}" class="btn btn-dark rounded-pill px-4">Aktivitäten entdecken</a>
-                <a href="{% url 'contact' %}" class="btn btn-outline-dark rounded-pill px-4">Schreib mir</a>
+                <a href="{% url 'activities' %}" class="btn btn-dark rounded-pill px-4">{% translate "Aktivitäten entdecken" %}</a>
+                <a href="{% url 'contact' %}" class="btn btn-outline-dark rounded-pill px-4">{% translate "Schreib mir" %}</a>
             </div>
         </div>
     </div>

@@ -1,76 +1,125 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}{% if activity %}Aktivität bearbeiten{% else %}Aktivität hinzufügen{% endif %} – Épinal Guide{% endblock %}
+{% block title %}{% if activity %}{% translate "Aktivität bearbeiten" %}{% else %}{% translate "Aktivität hinzufügen" %}{% endif %} – Épinal Guide{% endblock %}
 
 {% block content %}
 
 <div class="mx-auto" style="max-width: 720px;">
 
-    <h1 class="mb-4">{% if activity %}Aktivität bearbeiten{% else %}Aktivität hinzufügen{% endif %}</h1>
+    <h1 class="mb-4">{% if activity %}{% translate "Aktivität bearbeiten" %}{% else %}{% translate "Aktivität hinzufügen" %}{% endif %}</h1>
 
     <!-- Fortschritt: 1 Standort, 2 Kontakt -->
     <div class="d-flex flex-wrap align-items-center gap-4 mb-4">
         <div class="d-flex align-items-center gap-2">
             <span id="dot1" class="rounded-circle text-white d-inline-flex justify-content-center align-items-center bg-dark"
                   style="width:36px;height:36px;">1</span>
-            <span>Standortinformationen</span>
+            <span>{% translate "Standortinformationen" %}</span>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span id="dot2" class="rounded-circle text-white d-inline-flex justify-content-center align-items-center bg-secondary"
                   style="width:36px;height:36px;">2</span>
-            <span>Kontakt &amp; Öffnungszeiten</span>
+            <span>{% translate "Kontakt &amp; Öffnungszeiten" %}</span>
         </div>
     </div>
 
     <form method="post" enctype="multipart/form-data" id="addForm" data-start-step="{{ start_step }}">
         {% csrf_token %}
 
+        {% if activity.status == "returned" and activity.return_note %}
+            <!-- NEU: was der Admin beim Zurückschicken geschrieben hat -->
+            <div class="alert alert-warning"><strong>{% translate "Zurückgeschickt:" %}</strong> {{ activity.return_note }}</div>
+        {% endif %}
         {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
         <!-- Schritt 1 -->
         <div id="step1">
-            <h4 class="mb-3">Standortinformationen</h4>
+            <h4 class="mb-3">{% translate "Standortinformationen" %}</h4>
             {% include "guide/_field.html" with field=form.title %}
             <!-- NEU: bis zu 3 Kategorien, Haupt- oder Unterkategorie -->
             {% include "guide/_category_picker.html" %}
             <!-- NEU: Adresse mit Vorschlägen und Karte (füllt auch die Koordinaten aus) -->
             {% include "guide/_address_picker.html" %}
             {% include "guide/_field.html" with field=form.description %}
-            {% include "guide/_field.html" with field=form.price %}
+            <!-- NEU: Preis als Stufe, Knöpfe statt Zahl -->
+            <div class="mb-3">
+                <div class="form-label">{{ form.price_level.label }}</div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for radio in form.price_level %}
+                        <input type="radio" class="btn-check" name="{{ radio.data.name }}" value="{{ radio.data.value }}"
+                               id="{{ radio.id_for_label }}" autocomplete="off" required
+                               {% if radio.data.selected %}checked{% endif %}>
+                        <label class="pill pill-sm" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    {% endfor %}
+                </div>
+                <div class="form-text">{{ form.price_level.help_text }}</div>
+                {% for error in form.price_level.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
             {% include "guide/_field.html" with field=form.duration_minutes %}
             {% include "guide/_field.html" with field=form.event_date %}
-            {% if activity.image %}
-                <!-- beim Bearbeiten: aktuelles Foto zeigen -->
-                <img src="{{ activity.image.url }}" alt="Aktuelles Foto" class="rounded mb-2" style="max-height: 120px;">
-            {% endif %}
-            {% include "guide/_field.html" with field=form.image %}
+            <!-- NEU: Fotos. Man kann mehrmals auswählen (die Fotos werden gesammelt), mit dem Kreuz entfernen,
+                 eines als Titelbild wählen und beim Titelbild den Ausschnitt verschieben. JavaScript unten. -->
+            <div class="mb-3">
+                <div class="form-label">{{ form.photos.label }}</div>
+                <div id="photoList" class="photo-thumbs mb-2">
+                    {% for photo in form.existing_photos %}
+                        <div class="photo-thumb" data-key="{{ photo.value }}" data-url="{{ photo.url }}">
+                            <img src="{{ photo.url }}" alt="">
+                            <span class="photo-cover">{% translate "Titelbild" %}</span>
+                            <button type="button" class="photo-x" aria-label="{% translate "Foto entfernen" %}"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="photo-make-cover">{% translate "Als Titelbild" %}</button>
+                            <input type="checkbox" name="delete_photos" value="{{ photo.value }}" class="d-none"
+                                   {% if photo.value in form.delete_photos.value %}checked{% endif %}>
+                        </div>
+                    {% endfor %}
+                </div>
+                <label for="{{ form.photos.id_for_label }}" class="btn btn-outline-secondary rounded-pill">
+                    <i class="bi bi-camera me-1"></i>{% translate "Fotos auswählen" %}
+                </label>
+                <div class="visually-hidden">{{ form.photos }}</div>
+                <div class="form-text">{{ form.photos.help_text }}</div>
+                {% for error in form.photos.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                {{ form.cover_choice }}
+                {{ form.image_position }}
 
-            <button type="button" id="toStep2" class="btn btn-dark rounded-pill px-4">Speichern &amp; fortfahren</button>
+                <!-- Ausschnitt fürs Titelbild: Bild mit der Maus oder dem Finger verschieben -->
+                <div id="coverEditor" class="cover-editor mt-3 d-none">
+                    <div class="fw-bold small mb-1">{% translate "Ausschnitt fürs Titelbild" %}</div>
+                    <div class="cover-frame" id="coverFrame"><img id="coverImg" alt="" draggable="false"></div>
+                    <div class="form-text">{% translate "Zieh das Bild, bis der richtige Teil zu sehen ist. So erscheint es auf den Kacheln und oben auf der Seite." %}</div>
+                </div>
+            </div>
+
+            <button type="button" id="toStep2" class="btn btn-dark rounded-pill px-4">{% translate "Speichern &amp; fortfahren" %}</button>
         </div>
 
         <!-- Schritt 2 -->
         <div id="step2" class="d-none">
-            <h4 class="mb-3">Kontaktinformationen</h4>
+            <h4 class="mb-3">{% translate "Kontaktinformationen" %}</h4>
             {% include "guide/_field.html" with field=form.website %}
             {% include "guide/_field.html" with field=form.phone %}
             {% include "guide/_field.html" with field=form.email %}
 
-            <h4 class="mt-4 mb-3">Öffnungszeiten</h4>
+            <h4 class="mt-4 mb-3">{% translate "Anreise" %}</h4>
+            <!-- NEU: Haltestellen und Route kommen automatisch, hier nur Zusätzliches -->
+            {% include "guide/_field.html" with field=form.transport_note %}
+
+            <h4 class="mt-4 mb-3">{% translate "Öffnungszeiten" %}</h4>
             <!-- NEU: pro Wochentag, mit Pause, geschlossen und 24/7 -->
             {% include "guide/_opening_hours.html" %}
 
             <div class="d-flex flex-wrap align-items-center gap-3 mt-4">
-                <button type="button" id="toStep1" class="btn btn-link">Zurück</button>
+                <button type="button" id="toStep1" class="btn btn-link">{% translate "Zurück" %}</button>
                 <!-- name="save_draft": daran erkennt die View, dass es ein Entwurf ist -->
-                <button type="submit" name="save_draft" class="btn btn-outline-dark rounded-pill px-4">Als Entwurf speichern</button>
+                <button type="submit" name="save_draft" class="btn btn-outline-dark rounded-pill px-4">{% translate "Als Entwurf speichern" %}</button>
                 <button type="submit" class="btn btn-dark rounded-pill px-4">
-                    {% if activity.status == "published" %}Speichern{% else %}Senden{% endif %}
+                    {% if activity.status == "published" %}{% translate "Speichern" %}{% else %}{% translate "Senden" %}{% endif %}
                 </button>
             </div>
             {% if activity.status != "published" %}
-                <p class="text-muted small mt-3">Nach dem Senden prüfen wir deine Aktivität. Sie erscheint innerhalb von 24 Stunden bei den Aktivitäten.</p>
+                <p class="text-muted small mt-3">{% translate "Nach dem Senden prüfen wir deine Aktivität. Sie erscheint innerhalb von 24 Stunden bei den Aktivitäten." %}</p>
             {% endif %}
         </div>
     </form>
@@ -79,6 +128,11 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Texte für JavaScript (übersetzt, escapejs wegen Apostrophen im Französischen)
+    const T_ADDRESS_REQUIRED = "{% autoescape off %}{% filter escapejs %}{% translate "Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte." %}{% endfilter %}{% endautoescape %}";
+    const T_COVER = "{% autoescape off %}{% filter escapejs %}{% translate "Titelbild" %}{% endfilter %}{% endautoescape %}";
+    const T_PHOTO_REQUIRED = "{% autoescape off %}{% filter escapejs %}{% translate "Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht." %}{% endfilter %}{% endautoescape %}";
+
     const form = document.getElementById("addForm");
     const step1 = document.getElementById("step1");
     const step2 = document.getElementById("step2");
@@ -107,7 +161,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // NEU: ohne Ort auf der Karte nicht weiter (Koordinaten braucht es für Distanz und Karte)
         if (!document.getElementById("{{ form.latitude.id_for_label }}").value) {
             const address = document.getElementById("{{ form.address.id_for_label }}");
-            address.setCustomValidity("Bitte wähle eine Adresse aus den Vorschlägen oder klicke auf die Karte.");
+            address.setCustomValidity(T_ADDRESS_REQUIRED);
             address.reportValidity();
             address.addEventListener("input", () => address.setCustomValidity(""), { once: true });
             return;
@@ -117,12 +171,127 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("toStep1").addEventListener("click", () => show(1));
 
-    // NEU: Senden ohne Foto -> zurück zu Schritt 1 mit Hinweis (Entwurf geht auch ohne Foto)
-    const photo = document.getElementById("{{ form.image.id_for_label }}");
-    const hasPhoto = {% if activity.image %}true{% else %}false{% endif %};
+    // ---------- NEU: Fotos sammeln, entfernen, Titelbild wählen, Ausschnitt verschieben ----------
+    const photo = document.getElementById("{{ form.photos.id_for_label }}");
+    const photoList = document.getElementById("photoList");
+    const coverChoice = document.getElementById("{{ form.cover_choice.id_for_label }}");
+    const positionInput = document.getElementById("{{ form.image_position.id_for_label }}");
+    const coverEditor = document.getElementById("coverEditor");
+    const coverFrame = document.getElementById("coverFrame");
+    const coverImg = document.getElementById("coverImg");
+    const T_REMOVE = "{% autoescape off %}{% filter escapejs %}{% translate "Foto entfernen" %}{% endfilter %}{% endautoescape %}";
+    const T_MAKE_COVER = "{% autoescape off %}{% filter escapejs %}{% translate "Als Titelbild" %}{% endfilter %}{% endautoescape %}";
+    const savedPosition = positionInput.value || "50% 50%";
+    let newFiles = [];        // neu ausgewählte Dateien (der Browser vergisst sonst die erste Auswahl)
+    let coverKey = null;      // gewähltes Titelbild: "cover", eine Foto-Nummer oder eine neue Datei
+    let shownKey = null;      // Titelbild, dessen Ausschnitt gerade im Editor ist
+    let position = [50, 50];
+
+    function thumbs() {
+        // alle sichtbaren Fotos in der Reihenfolge der Liste
+        return Array.from(photoList.querySelectorAll(".photo-thumb:not(.is-removed)"));
+    }
+    function keptPhotos() {
+        return thumbs().length;
+    }
+    function syncInput() {
+        // die gesammelten Dateien wieder ins Datei-Feld legen, damit sie mitgeschickt werden
+        const transfer = new DataTransfer();
+        newFiles.forEach(file => transfer.items.add(file));
+        photo.files = transfer.files;
+    }
+    function setPosition(x, y) {
+        position = [Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y))];
+        const value = position[0].toFixed(0) + "% " + position[1].toFixed(0) + "%";
+        coverImg.style.objectPosition = value;
+        positionInput.value = value;
+    }
+    function updateCover() {
+        const items = thumbs();
+        let current = items.find(t => t.dataset.key === coverKey || t.fileRef === coverKey);
+        if (!current) current = items[0];  // Titelbild entfernt: das erste übrige Foto
+        items.forEach(t => t.classList.toggle("is-cover", t === current));
+        if (!current) {
+            coverEditor.classList.add("d-none");
+            coverChoice.value = "";
+            return;
+        }
+        const key = current.fileRef ? current.fileRef : current.dataset.key;
+        if (key !== shownKey) {
+            // anderes Titelbild: Ausschnitt in die Mitte (beim bisherigen den gespeicherten)
+            const [x, y] = (current.dataset.key === "cover" ? savedPosition : "50% 50%").split(" ").map(parseFloat);
+            setPosition(x, y);
+            shownKey = key;
+        }
+        coverKey = key;
+        coverChoice.value = current.fileRef ? "new:" + newFiles.indexOf(current.fileRef)
+                          : (current.dataset.key === "cover" ? "" : current.dataset.key);
+        coverImg.src = current.querySelector("img").src;
+        coverEditor.classList.remove("d-none");
+    }
+    function addThumb(file) {
+        const box = document.createElement("div");
+        box.className = "photo-thumb";
+        box.fileRef = file;
+        box.innerHTML = '<img alt=""><span class="photo-cover"></span>' +
+            '<button type="button" class="photo-x"><i class="bi bi-x-lg"></i></button>' +
+            '<button type="button" class="photo-make-cover"></button>';
+        box.querySelector("img").src = URL.createObjectURL(file);
+        box.querySelector(".photo-cover").textContent = T_COVER;
+        box.querySelector(".photo-x").setAttribute("aria-label", T_REMOVE);
+        box.querySelector(".photo-make-cover").textContent = T_MAKE_COVER;
+        photoList.appendChild(box);
+    }
+    photoList.addEventListener("click", function (e) {
+        const box = e.target.closest(".photo-thumb");
+        if (!box) return;
+        if (e.target.closest(".photo-x")) {
+            if (box.fileRef) {
+                newFiles = newFiles.filter(f => f !== box.fileRef);
+                box.remove();
+                syncInput();
+            } else {
+                box.classList.add("is-removed");  // vorhandenes Foto: beim Speichern löschen
+                box.querySelector('input[name="delete_photos"]').checked = true;
+            }
+        } else if (e.target.closest(".photo-make-cover")) {
+            coverKey = box.fileRef || box.dataset.key;
+            photoList.prepend(box);  // Titelbild nach vorne
+        }
+        updateCover();
+    });
+    photo.addEventListener("change", function () {
+        Array.from(photo.files).forEach(function (file) {
+            if (!newFiles.includes(file)) {
+                newFiles.push(file);
+                addThumb(file);
+            }
+        });
+        syncInput();
+        updateCover();
+    });
+    // Ausschnitt verschieben: ziehen mit Maus oder Finger
+    let drag = null;
+    coverFrame.addEventListener("pointerdown", function (e) {
+        drag = { x: e.clientX, y: e.clientY, start: position.slice() };
+        coverFrame.setPointerCapture(e.pointerId);
+    });
+    coverFrame.addEventListener("pointermove", function (e) {
+        if (!drag) return;
+        const dx = (e.clientX - drag.x) / coverFrame.clientWidth * 100;
+        const dy = (e.clientY - drag.y) / coverFrame.clientHeight * 100;
+        setPosition(drag.start[0] - dx * 1.5, drag.start[1] - dy * 1.5);  // Bild nach rechts ziehen = mehr von links sehen
+    });
+    ["pointerup", "pointercancel"].forEach(type => coverFrame.addEventListener(type, () => { drag = null; }));
+    // vorhandene, schon entfernte Fotos (nach einem Fehler beim Speichern) ausblenden
+    photoList.querySelectorAll('input[name="delete_photos"]:checked').forEach(c => c.closest(".photo-thumb").classList.add("is-removed"));
+    coverKey = photoList.querySelector('[data-key="cover"]') ? "cover" : null;
+    updateCover();
+
+    // Senden ohne Foto -> zurück zu Schritt 1 mit Hinweis (Entwurf geht auch ohne Foto)
     form.addEventListener("submit", function (e) {
         const isDraft = e.submitter && e.submitter.name === "save_draft";
-        if (isDraft || hasPhoto || photo.files.length) return;
+        if (isDraft || keptPhotos()) return;
         e.preventDefault();
         show(1);
         let hint = document.getElementById("photoHint");
@@ -130,10 +299,10 @@ document.addEventListener("DOMContentLoaded", function () {
             hint = document.createElement("div");
             hint.id = "photoHint";
             hint.className = "text-danger small";
-            hint.textContent = "Bitte füge ein Foto hinzu, damit man sieht, wie es dort aussieht.";
-            photo.insertAdjacentElement("afterend", hint);
+            hint.textContent = T_PHOTO_REQUIRED;
+            photoList.insertAdjacentElement("afterend", hint);  // sichtbar unter den Fotos (das Datei-Feld selbst ist versteckt)
         }
-        photo.scrollIntoView({ behavior: "smooth", block: "center" });
+        photoList.scrollIntoView({ behavior: "smooth", block: "center" });
         photo.addEventListener("change", () => hint.remove(), { once: true });
     });
 
@@ -146,8 +315,23 @@ document.addEventListener("DOMContentLoaded", function () {
         row.querySelectorAll(".cat-sub-options").forEach(function (box) {
             const show = box.dataset.main === main;
             box.classList.toggle("d-none", !show);
-            if (show && reset) box.querySelector('input[value=""]').checked = true;  // neu gewählt: «allgemein»
+            if (reset) {
+                // neue Hauptkategorie gewählt: alles abwählen, «allgemein» an
+                box.querySelectorAll(".cat-sub").forEach(c => { c.checked = false; });
+                box.querySelector(".cat-all").checked = true;
+            }
         });
+    }
+    function updateSubChoice(box, clicked) {
+        // NEU: mehrere Unterkategorien möglich. «Nein, allgemein» schliesst die anderen aus.
+        const all = box.querySelector(".cat-all");
+        const subs = Array.from(box.querySelectorAll(".cat-sub"));
+        if (clicked === all) {
+            if (all.checked) subs.forEach(c => { c.checked = false; });
+        } else if (clicked.checked) {
+            all.checked = false;
+        }
+        if (!subs.some(c => c.checked)) all.checked = true;  // nichts angetippt = allgemein
     }
     function blockChosenMains() {
         // NEU: eine Hauptkategorie, die schon in einer anderen Zeile gewählt ist, ist hier ausgegraut
@@ -183,13 +367,19 @@ document.addEventListener("DOMContentLoaded", function () {
             showSubOptions(row, true);
             updateCategories();
         });
-        row.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener("change", updateCategories));
+        row.querySelectorAll(".cat-sub-options").forEach(function (box) {
+            box.querySelectorAll('input[type="checkbox"]').forEach(function (input) {
+                input.addEventListener("change", function () {
+                    updateSubChoice(box, input);
+                    updateCategories();
+                });
+            });
+        });
         const remove = row.querySelector(".cat-remove");
         if (remove) {
             remove.addEventListener("click", function () {
                 row.querySelector("select").value = "";
-                row.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = false; });
-                showSubOptions(row, false);
+                showSubOptions(row, true);
                 row.classList.add("d-none");
                 updateCategories();
             });

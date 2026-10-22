@@ -1,9 +1,12 @@
+{% load i18n %}
 {% if activity.status == 'published' %}
-    <span class="badge badge-published">Veröffentlicht</span>
+    <span class="badge badge-published">{% translate "Veröffentlicht" %}</span>
 {% elif activity.status == 'pending' %}
-    <span class="badge badge-pending" title="Wird geprüft und erscheint innerhalb von 24 Stunden">Wartet auf Freigabe</span>
+    <span class="badge badge-pending" title="{% translate "Wird geprüft und erscheint innerhalb von 24 Stunden" %}">{% translate "Wartet auf Freigabe" %}</span>
 {% elif activity.status == 'review' %}
-    <span class="badge badge-review" title="Wurde gemeldet und ist ausgeblendet, bis sie geprüft ist">In Prüfung</span>
+    <span class="badge badge-review" title="{% translate "Wurde gemeldet und ist ausgeblendet, bis sie geprüft ist" %}">{% translate "In Prüfung" %}</span>
+{% elif activity.status == 'returned' %}
+    <span class="badge badge-returned" title="{% translate "Zurückgeschickt: bitte überarbeiten und nochmals senden" %}">{% translate "Zurückgeschickt" %}</span>
 {% else %}
-    <span class="badge badge-draft">Entwurf</span>
+    <span class="badge badge-draft">{% translate "Entwurf" %}</span>
 {% endif %}

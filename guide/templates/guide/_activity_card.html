@@ -1,49 +1,50 @@
 {% load guide_extras %}
+{% load i18n %}
 {# Eine Aktivitäten-Karte. Wird auf "Aktivitäten" und "Favoriten" eingebunden (mit include). #}
 <div class="col-md-6 col-lg-4 activity-col">
     <div class="card h-100 activity-card position-relative">
 
         <div class="card-img-wrapper">
             {% if activity.image %}
-                <img src="{{ activity.image.url }}" class="card-img-top"
-                     alt="{{ activity.title }}">
+                <img src="{{ activity.image.url }}" style="object-position: {{ activity.image_position }};" class="card-img-top"
+                     alt="{{ activity.display_title }}">
             {% else %}
-                <img src="https://placehold.co/600x400" class="card-img-top"
-                     alt="Kein Bild vorhanden">
+                <!-- kein Foto: farbige Fläche mit Symbol statt grauem Platzhalter von placehold.co -->
+                <div class="card-img-top img-placeholder" role="img" aria-label="{% translate "Kein Bild vorhanden" %}"><i class="bi bi-image"></i></div>
             {% endif %}
             {% include "guide/_fav_button.html" %}
         </div>
 
         <div class="card-body">
-            {% for category in activity.categories.all %}<span class="badge bg-success me-1 mb-2">{{ category.label }}</span>{% endfor %}
-            <h5 class="card-title">{{ activity.title }}</h5>
-            <p class="card-text">{{ activity.description|truncatechars:100 }}</p>
+            {% for category in activity.categories.all %}<span class="badge cat-badge me-1 mb-2">{{ category.label }}</span>{% endfor %}
+            <h5 class="card-title">{{ activity.display_title }}</h5>
+            <p class="card-text">{{ activity.display_description|truncatechars:100 }}</p>
 
             <p class="text-muted small mb-0">
                 {% if activity.event_date %}
-                    📅 {{ activity.event_date|date:"j. F" }}<br>
+                    <i class="bi bi-calendar-event me-1"></i>{{ activity.event_date|date:"j. F" }}<br>
                 {% endif %}
 
-                📍 {{ activity.location.city }}<br>
+                <i class="bi bi-geo-alt me-1"></i>{{ activity.location.city }}{% if activity.distance_text %} · {% blocktranslate trimmed with distance=activity.distance_text %}{{ distance }} entfernt{% endblocktranslate %}{% endif %}<br>
 
-                💰 {% if activity.price == 0 %}Kostenlos{% else %}{{ activity.price }} €{% endif %}<br>
+                <i class="bi bi-tag me-1"></i>{{ activity.get_price_level_display }}<br>
 
                 {% if activity.duration_minutes %}
-                    ⏱ {{ activity.duration_minutes }} Min.
+                    <i class="bi bi-clock me-1"></i>{% blocktranslate trimmed with minutes=activity.duration_minutes %}{{ minutes }} Min.{% endblocktranslate %}
                 {% endif %}
             </p>
         </div>
 
         <div class="card-footer d-flex justify-content-between align-items-center">
-            <span class="stars" title="{{ activity.avg_rating|default:0|floatformat:1 }} von 5">
+            <span class="stars" {% if activity.rating_count %}title="{% blocktranslate trimmed with rating=activity.avg_rating|floatformat:1 %}{{ rating }} von 5{% endblocktranslate %}"{% endif %}>
                 {% if activity.rating_count %}
                     {{ activity.avg_rating|stars }} <small class="text-muted">({{ activity.rating_count }})</small>
                 {% else %}
-                    <small class="text-muted">Noch keine Bewertung</small>
+                    <small class="text-muted">{% translate "Noch keine Bewertung" %}</small>
                 {% endif %}
             </span>
             <!-- stretched-link = die ganze Karte ist klickbar -->
-            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-primary btn-sm stretched-link">Mehr erfahren</a>
+            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-primary btn-sm stretched-link">{% translate "Mehr erfahren" %}</a>
         </div>
 
     </div>

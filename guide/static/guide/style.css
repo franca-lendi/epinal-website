@@ -1,9 +1,36 @@
 :root {
-    --bg: #ffffff;
+    /* ===== Farben (Palette «Himbeerrot und Anthrazit») =====
+       Regel: etwa 80 % neutral (Fast-Weiss, Grau, Anthrazit), 20 % Himbeerrot.
+       Himbeerrot nur gezielt: Logo, Streifen oben, gefüllte Hauptknöpfe, Gewähltes/Aktives, Herz, Nadeln.
+       Die Farbe auf der Seite kommt vor allem von den Fotos der Aktivitäten.
+       Die Namen beschreiben die Rolle, nicht den Farbton. Für eine andere Palette nur diese Zeilen ändern.
+       main = Himbeerrot: Logo, Streifen oben, gefüllte Knöpfe, aktive und gewählte Dinge
+       pop  = Anthrazit: grosse Titel, Kategorien, Footer
+       red  = Herz, Nadeln auf der Karte, Melden/Löschen (bleibt immer rot, egal welche Palette)
+       -light, -soft und -tint = nur als Fläche oder Rand, nie als Schrift (zu wenig Kontrast) */
+    --main-dark: #3A3537;    /* Anthrazit: Schrift auf Knöpfen, kleine Titel, Links */
+    --main: #A33148;         /* Himbeerrot: gefüllte Knöpfe (weisse Schrift gut lesbar), Aktives */
+    --main-light: #CFCFCF;   /* Grau: Rand der Nebenknöpfe */
+    --main-soft: #E5E5E5;    /* hellgrau: Rand der Aktivitäten */
+    --main-tint: #F1F1F1;    /* sehr hellgrau: Flächen beim Darüberfahren, kein Foto */
+    --pop-dark: #1F1C1E;     /* fast schwarz: Footer */
+    --pop: #3A3537;          /* Anthrazit: grosse Titel, Kategorien (weisse Schrift gut lesbar) */
+    --pop-bright: #3A3537;
+    --pop-light: #B9B3B5;    /* hellgrau: nur Flächen */
+    --pop-tint: #F1EFEF;     /* sehr hellgrau: nur Flächen */
+    --red: #A33148;          /* Herz, Nadeln, Melden/Löschen */
+    --red-dark: #7E2437;
+    --main-hover: #7E2437;   /* dunkleres Himbeerrot beim Darüberfahren */
+    --page: #FFFFFF;         /* Hintergrund: weiss */
+    --card: #FFFFFF;         /* Karten und Kästen */
+
+    --bg: var(--page);
     --text: #1a1a1a;
     --muted: #6b7280;
-    --accent: #2f6b4f;
-    --line: #e5e7eb;
+    --accent: var(--main);
+    --line: #E5E5E5;        /* Linien: neutrales helles Grau */
+    --bs-body-bg: var(--page);
+    --bs-body-color: var(--text);
 
     /* Schriften */
     --font-title: 'Fraunces', Georgia, serif;          /* Titel, Dicke 600 */
@@ -114,7 +141,7 @@ strong, b, .badge {
     font-size: 1.3rem;
     cursor: pointer;
 }
-.fav-btn:hover { color: #d63384; }
+.fav-btn:hover { color: var(--pop-bright); }
 
 .activity-card { transition: transform 0.15s; }
 .activity-card:hover { transform: translateY(-3px); }
@@ -175,8 +202,8 @@ main {
 
 /* ---------- Hinzufügen (Tripadvisor-Stil) ---------- */
 .wizard { max-width: 640px; }
-.wizard-title { font-size: 2.6rem; font-weight: 600; color: #0b3d2c; margin-bottom: 1.5rem; }
-.wizard-section { font-size: 1.15rem; font-weight: 600; color: #0b3d2c; margin: 1.5rem 0 1rem; }
+.wizard-title { font-size: 2.6rem; font-weight: 600; color: var(--main-dark); margin-bottom: 1.5rem; }
+.wizard-section { font-size: 1.15rem; font-weight: 600; color: var(--main-dark); margin: 1.5rem 0 1rem; }
 
 .steps { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; }
 .step { display: flex; align-items: center; gap: 0.5rem; color: var(--text); font-weight: 700; text-decoration: none; }
@@ -191,7 +218,7 @@ main {
     color: #fff;
     font-size: 0.9rem;
 }
-.step.active .step-number, .step.done .step-number { background: #0b3d2c; }
+.step.active .step-number, .step.done .step-number { background: var(--main-dark); }
 
 /* Knöpfe zum Auswählen (Kategorie, Tage, Begleitung) */
 .pill {
@@ -205,7 +232,7 @@ main {
     transition: background 0.15s;
 }
 .pill:hover { background: #f1f3f5; }
-.btn-check:checked + .pill { background: #0b3d2c; border-color: #0b3d2c; color: #fff; }
+.btn-check:checked + .pill { background: var(--main-dark); border-color: var(--main-dark); color: #fff; }
 .btn-check:focus-visible + .pill { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pill-round { width: 3rem; height: 3rem; padding: 0; justify-content: center; }
 
@@ -239,7 +266,7 @@ main {
 }
 
 /* ---------- Bewerten (Tripadvisor-Stil) ---------- */
-.review-question { font-size: 3rem; font-weight: 600; color: #0b3d2c; line-height: 1.1; }
+.review-question { font-size: 3rem; font-weight: 600; color: var(--main-dark); line-height: 1.1; }
 .review-target { max-width: 260px; }
 .review-target .card-img-top, .review-target .img-placeholder { height: 200px; object-fit: cover; }
 .review-form { border-left: 1px solid var(--line); }
@@ -248,13 +275,13 @@ main {
 .rating-circles label {
     width: 2.6rem;
     height: 2.6rem;
-    border: 3px solid #0b8a4b;
+    border: 3px solid var(--main);
     border-radius: 50%;
     cursor: pointer;
     transition: background 0.1s;
 }
-.rating-circles label.filled { background: #0b8a4b; }
-.rating-circles .btn-check:focus-visible + label { outline: 2px solid #0b3d2c; outline-offset: 2px; }
+.rating-circles label.filled { background: var(--main); }
+.rating-circles .btn-check:focus-visible + label { outline: 2px solid var(--main-dark); outline-offset: 2px; }
 
 @media (max-width: 992px) {
     .review-form { border-left: none; }
@@ -266,7 +293,7 @@ main {
 /* ===================== NEU: Favoriten und Filter ===================== */
 
 /* Herz rot, wenn gespeichert */
-.fav-btn.is-favorite { color: #dc3545; }
+.fav-btn.is-favorite { color: var(--pop-bright); }
 
 /* Herz auf der Detailseite: normaler Knopf statt rundes Herz auf dem Bild */
 .fav-btn.fav-inline {
@@ -274,13 +301,13 @@ main {
     width: auto;
     height: auto;
     padding: 0.5rem 1rem;
-    border: 1px solid #dc3545;
+    border: 1px solid var(--pop);
     border-radius: 0.5rem;
     background: #fff;
-    color: #dc3545;
+    color: var(--pop);
     font-size: 1.1rem;
 }
-.fav-btn.fav-inline.is-favorite { background: #dc3545; color: #fff; }
+.fav-btn.fav-inline.is-favorite { background: var(--pop); color: #fff; }
 
 /* Filter-Kästchen über den Karten schweben lassen statt die Seite zu verschieben */
 .filter-box { background: var(--bg); max-height: 320px; overflow-y: auto; }
@@ -298,7 +325,7 @@ main {
 }
 .rating-stars label.filled { color: #f5a623; }   /* gefüllter Stern: gelb */
 .rating-stars label:hover { transform: scale(1.1); }
-.rating-stars .btn-check:focus-visible + label { outline: 2px solid #0b3d2c; outline-offset: 2px; border-radius: 4px; }
+.rating-stars .btn-check:focus-visible + label { outline: 2px solid var(--main-dark); outline-offset: 2px; border-radius: 4px; }
 
 /* Vorschau der ausgewählten Fotos */
 .photo-preview { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -309,11 +336,11 @@ main {
 .add-card {
     min-height: 320px;
     border: 2px dashed #b8c2cc;
-    background: #f8f9fa;
+    background: var(--card);
     color: var(--text);
     transition: border-color 0.15s, background 0.15s;
 }
-.add-card:hover { border-color: var(--accent); background: #eef6f1; }
+.add-card:hover { border-color: var(--accent); background: #F9EDF0; }
 .add-card-icon {
     display: inline-flex;
     align-items: center;
@@ -326,7 +353,7 @@ main {
     font-size: 1.6rem;
 }
 
-.badge-review { background: #fde2e1; color: #b02a37; font-weight: 700; }
+.badge-review { background: var(--pop-tint); color: var(--pop-dark); font-weight: 700; }
 .badge-pending { background: #e3edf9; color: #1f5596; font-weight: 700; }  /* NEU: wartet auf Freigabe */
 
 .review .stars { font-size: 1.3rem; letter-spacing: 2px; }
@@ -352,7 +379,7 @@ main {
 }
 .about-photo-sm.about-photo-empty { font-size: 2rem; }
 .about-name { font-size: 1.8rem; font-weight: 600; }
-.about-intro { font-size: 2rem; font-weight: 600; color: #0b3d2c; margin-bottom: 1rem; }
+.about-intro { font-size: 2rem; font-weight: 600; color: var(--main-dark); margin-bottom: 1rem; }
 .about-text { font-size: 1.1rem; line-height: 1.7; }
 .about-social { color: var(--text); }
 .about-social:hover { color: var(--accent); }
@@ -378,15 +405,15 @@ main {
     margin-top: 4rem;
     padding-top: 3rem;
     padding-bottom: 1.5rem;
-    background: #0b3d2c;
-    color: #d6e4dc;
+    background: var(--main-dark);
+    color: #F2D9DF;
 }
 .footer-inner { max-width: 1400px; margin: 0 auto; }
 .footer-brand { font-size: 1.4rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; }
 .footer-text { max-width: 360px; }
 .footer-title { font-weight: 600; color: #fff; margin-bottom: 0.75rem; }
 .site-footer li { margin-bottom: 0.4rem; }
-.site-footer a { color: #d6e4dc; text-decoration: none; }
+.site-footer a { color: #F2D9DF; text-decoration: none; }
 .site-footer a:hover { color: #fff; text-decoration: underline; }
 .footer-bottom {
     display: flex;
@@ -421,18 +448,19 @@ main {
 /* ===================== NEU: Knöpfe und Felder einheitlich ===================== */
 /* Ziel: überall die gleichen Farben und die gleiche runde Form.
    Statt jede Seite einzeln zu ändern, stellen wir die Bootstrap-Farben auf unsere Farben um.
-   - grün (--accent):        Hauptknöpfe (btn-primary), z.B. Suchen, Anwenden, Speichern
-   - dunkelgrün (--accent-dark): btn-dark und aktive Filter
+   - Hauptfarbe (--accent):  Hauptknöpfe (btn-primary), z.B. Suchen, Anwenden, Speichern
+   - dunkle Hauptfarbe (--accent-dark): btn-dark und aktive Filter
    - Umriss:                 Nebenknöpfe (btn-outline-...)
    - rot bleibt nur für Löschen, Melden und das Herz */
 :root {
-    --accent-dark: #0b3d2c;
-    --bs-primary: #2f6b4f;
-    --bs-primary-rgb: 47, 107, 79;
-    --bs-link-color: #2f6b4f;
-    --bs-link-color-rgb: 47, 107, 79;
-    --bs-link-hover-color: #0b3d2c;
-    --bs-link-hover-color-rgb: 11, 61, 44;
+    --accent-dark: var(--main-dark);
+    --bs-primary: #A33148;
+    --bs-primary-rgb: 163, 49, 72;
+    /* Links anthrazit, beim Darüberfahren himbeerrot */
+    --bs-link-color: #3A3537;
+    --bs-link-color-rgb: 79, 24, 35;
+    --bs-link-hover-color: #A33148;
+    --bs-link-hover-color-rgb: 163, 49, 72;
 }
 
 /* alle Knöpfe rund wie "Login" */
@@ -454,7 +482,7 @@ main {
     --bs-btn-active-border-color: var(--accent-dark);
     --bs-btn-disabled-bg: var(--accent);
     --bs-btn-disabled-border-color: var(--accent);
-    --bs-btn-focus-shadow-rgb: 47, 107, 79;
+    --bs-btn-focus-shadow-rgb: 163, 49, 72;
 }
 .btn-dark {
     --bs-btn-bg: var(--accent-dark);
@@ -463,7 +491,7 @@ main {
     --bs-btn-hover-border-color: var(--accent);
     --bs-btn-active-bg: var(--accent);
     --bs-btn-active-border-color: var(--accent);
-    --bs-btn-focus-shadow-rgb: 11, 61, 44;
+    --bs-btn-focus-shadow-rgb: 79, 24, 35;
 }
 .btn-outline-primary,
 .btn-outline-dark {
@@ -475,7 +503,7 @@ main {
     --bs-btn-active-color: #fff;
     --bs-btn-active-bg: var(--accent-dark);
     --bs-btn-active-border-color: var(--accent-dark);
-    --bs-btn-focus-shadow-rgb: 47, 107, 79;
+    --bs-btn-focus-shadow-rgb: 163, 49, 72;
 }
 /* Filter- und Nebenknöpfe: ruhiger grauer Rand, Schrift dunkel */
 .btn-outline-secondary {
@@ -498,12 +526,12 @@ main {
     padding-left: 1.25rem;
 }
 
-/* Eingabefelder, Häkchen und Schieberegler in Grün statt Blau */
+/* Eingabefelder, Häkchen und Schieberegler in der Hauptfarbe */
 .form-control:focus,
 .form-select:focus,
 .form-check-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 0.2rem rgba(47, 107, 79, 0.2);
+    box-shadow: 0 0 0 0.2rem rgba(163, 49, 72, 0.2);
 }
 .form-check-input:checked {
     background-color: var(--accent);
@@ -528,13 +556,13 @@ main {
     .activities-map { height: 360px; }   /* Handy: Karte oben, Liste darunter */
 }
 
-/* grüne Nadel auf der Karte */
+/* Nadel auf der Karte */
 .map-pin { background: none; border: none; }
 .map-pin i {
     display: block;
     font-size: 2rem;
     line-height: 1;
-    color: var(--accent);
+    color: var(--pop-bright);
     filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
 .map-popup-title { display: block; font-weight: 700; margin-bottom: 0.15rem; }
@@ -600,7 +628,7 @@ main {
 .map-list-fav .fav-btn { position: static; width: 34px; height: 34px; font-size: 1.2rem; background: none; }
 
 /* Nadel, deren Eintrag gerade unter der Maus ist */
-.map-pin.is-active i { color: var(--accent-dark); transform: scale(1.25); transform-origin: bottom center; }
+.map-pin.is-active i { color: var(--pop); transform: scale(1.25); transform-origin: bottom center; }
 
 
 /* ===================== NEU: Unterkategorien im Filter ===================== */
@@ -624,7 +652,7 @@ main {
 
 /* ===================== NEU: Kategorien beim Hinzufügen (bis zu 3) ===================== */
 .pill-sm { padding: 0.25rem 0.75rem; font-size: 0.9rem; }
-/* «Keine passt? Eigene hinzufügen»: gestrichelt und grün, damit es auffällt */
+/* «Keine passt? Eigene hinzufügen»: gestrichelt in der Hauptfarbe, damit es auffällt */
 .pill-new { border-style: dashed; border-color: var(--accent); color: var(--accent); }
 .btn-check:checked + .pill-new { background: var(--accent); border-color: var(--accent); color: #fff; }
 .cat-remove { flex: 0 0 auto; }
@@ -684,5 +712,511 @@ main {
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 1rem 1.25rem;
-    background: #fafafa;
+    background: var(--card);
 }
+
+
+/* ===================== NEU: Farben ===================== */
+body { background: var(--bg); }
+
+/* Titel dunkelblau statt schwarz */
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .logo { color: var(--main-dark); }
+
+/* Karten und Kästen etwas heller als der Hintergrund */
+.card, .modal-content, .dropdown-menu {
+    --bs-card-bg: var(--card);
+    --bs-card-border-color: var(--line);
+    --bs-modal-bg: var(--card);
+    --bs-dropdown-bg: var(--card);
+}
+.card-footer { background: transparent; }
+
+/* Kategorien: hellrosa Fläche, dunkles Weinrot als Schrift */
+.cat-badge { background: var(--pop-tint); color: var(--pop-dark); font-weight: 700; }
+
+/* Melden und Löschen im Himbeerrot der Seite statt Bootstrap-Rot */
+.btn-danger {
+    --bs-btn-bg: var(--pop);
+    --bs-btn-border-color: var(--pop);
+    --bs-btn-hover-bg: var(--pop-dark);
+    --bs-btn-hover-border-color: var(--pop-dark);
+    --bs-btn-active-bg: var(--pop-dark);
+    --bs-btn-active-border-color: var(--pop-dark);
+}
+.btn-outline-danger {
+    --bs-btn-color: var(--pop);
+    --bs-btn-border-color: var(--pop);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--pop);
+    --bs-btn-hover-border-color: var(--pop);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--pop-dark);
+    --bs-btn-active-border-color: var(--pop-dark);
+}
+
+/* Fokus-Rahmen in Blau */
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--main-light);
+    box-shadow: 0 0 0 0.2rem rgba(163, 49, 72, 0.25);
+}
+
+/* Menüpunkte: Hover blau, aktiv dunkelblau */
+.main-nav a:hover { color: var(--main); }
+.main-nav a.active { color: var(--main-dark); border-bottom-color: var(--main-dark); }
+
+
+/* ===================== NEU: mehr Hauptfarbe ===================== */
+
+
+/* Alle Nebenknöpfe (Filter, Abbrechen, Ansehen ...) mit hellblauem Rand statt grau.
+   Schrift dunkelblau, gut lesbar. */
+.btn-outline-secondary {
+    --bs-btn-color: var(--main-dark);
+    --bs-btn-border-color: var(--main-light);
+    --bs-btn-hover-color: var(--main-dark);
+    --bs-btn-hover-bg: var(--main-tint);
+    --bs-btn-hover-border-color: var(--main-dark);
+    --bs-btn-active-color: var(--main-dark);
+    --bs-btn-active-bg: var(--main-tint);
+    --bs-btn-active-border-color: var(--main-dark);
+    --bs-btn-disabled-color: var(--main-light);
+    --bs-btn-disabled-border-color: var(--main-light);
+}
+.btn-outline-primary { --bs-btn-color: var(--main-dark); --bs-btn-hover-bg: var(--main); }
+
+/* Aktivitäten (Kacheln, Liste neben der Karte, Deine Uploads) zart blau umrandet */
+.activity-card,
+.upload-card,
+.map-list-item {
+    border: 1px solid var(--main-soft);
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.activity-card:hover,
+.upload-card:hover,
+.map-list-item:hover,
+.map-list-item.active {
+    border-color: var(--main-light);
+    box-shadow: 0 6px 18px rgba(163, 49, 72, 0.10);
+}
+
+/* kein Foto: hellblaue Fläche statt grau */
+.img-placeholder { background: var(--main-tint); color: var(--main-light); }
+
+/* NEU: Kopfzeile (Logo und Navigation) weiss, der Rest bleibt hell-creme */
+.top-bar, .main-nav { background: #FFFFFF; }
+
+/* NEU: Hauptknöpfe (Suchen, Anwenden, Anmelden, Freigeben ...) sanfter:
+   zarte blaue Fläche mit dunkelblauer Schrift statt kräftigem Blau mit weisser Schrift */
+.btn-primary {
+    --bs-btn-color: var(--main-dark);
+    --bs-btn-bg: var(--main-soft);
+    --bs-btn-border-color: var(--main-soft);
+    --bs-btn-hover-color: var(--main-dark);
+    --bs-btn-hover-bg: var(--main-light);
+    --bs-btn-hover-border-color: var(--main-light);
+    --bs-btn-active-color: var(--main-dark);
+    --bs-btn-active-bg: var(--main-light);
+    --bs-btn-active-border-color: var(--main-light);
+    --bs-btn-disabled-color: var(--main-dark);
+    --bs-btn-disabled-bg: var(--main-soft);
+    --bs-btn-disabled-border-color: var(--main-soft);
+}
+
+/* NEU: Knöpfe ohne Farbfläche (nur Rand) sind weiss statt durchsichtig */
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-dark,
+.btn-outline-danger { --bs-btn-bg: #FFFFFF; }
+.login-btn, .pill { background: #FFFFFF; }
+
+/* NEU: Logo und grosse Titel im helleren Blau. Kleine Titel (h5, h6) bleiben dunkelblau,
+   weil #4F78A0 erst bei grosser Schrift genug Kontrast hat. */
+.logo, h1, h2, h3, h4, .h1, .h2, .h3, .h4,
+.wizard-title, .detail-title, .review-question, .about-intro { color: var(--main); }
+h5, h6, .h5, .h6 { color: var(--main-dark); }   /* auch wenn ein h2/h3 klein dargestellt wird */
+
+/* NEU: Himbeerrot #A33148 für die Kategorien und im Kopf */
+.cat-badge { background: var(--pop); color: #FFFFFF; }          /* weisse Schrift gut lesbar (Kontrast 6.8) */
+.top-bar { border-top: 4px solid var(--pop); }                   /* schmaler Streifen ganz oben */
+.main-nav a.active { border-bottom-color: var(--pop); }          /* Strich unter dem aktiven Menüpunkt */
+
+/* NEU: Logo und grosse Titel in Himbeerrot statt Blau */
+.logo, h1, h2, h3, h4, .h1, .h2, .h3, .h4,
+.wizard-title, .detail-title, .review-question, .about-intro { color: var(--pop); }
+h5, h6, .h5, .h6 { color: var(--main-dark); }
+
+/* NEU: Herz, Nadeln und Melden/Löschen bleiben rot, auch wenn die Hauptfarbe wechselt */
+.fav-btn:hover, .fav-btn.is-favorite { color: var(--red); }
+.fav-btn.fav-inline { border-color: var(--red); color: var(--red); }
+.fav-btn.fav-inline.is-favorite { background: var(--red); color: #fff; }
+.map-pin i { color: var(--red); }
+.map-pin.is-active i { color: var(--red-dark); }
+.btn-danger {
+    --bs-btn-bg: var(--red); --bs-btn-border-color: var(--red);
+    --bs-btn-hover-bg: var(--red-dark); --bs-btn-hover-border-color: var(--red-dark);
+    --bs-btn-active-bg: var(--red-dark); --bs-btn-active-border-color: var(--red-dark);
+}
+.btn-outline-danger {
+    --bs-btn-color: var(--red); --bs-btn-border-color: var(--red);
+    --bs-btn-hover-bg: var(--red); --bs-btn-hover-border-color: var(--red);
+    --bs-btn-active-bg: var(--red-dark); --bs-btn-active-border-color: var(--red-dark);
+}
+
+/* NEU (Anthrazit-Palette): Logo und Streifen oben in Himbeerrot, Footer anthrazit */
+.logo { color: var(--main); }
+.top-bar { border-top-color: var(--main); }
+.main-nav a.active { color: var(--main-dark); border-bottom-color: var(--main); }
+.site-footer { background: var(--pop-dark); color: #D9D5D6; }
+.site-footer a { color: #D9D5D6; }
+.footer-title { color: #FFFFFF; }
+
+/* ===================== NEU: 80 % neutral, 20 % Himbeerrot ===================== */
+/* Gefüllte Hauptknöpfe (Suchen, Anwenden, Anmelden, Freigeben ...): Himbeerrot mit weisser Schrift */
+.btn-primary {
+    --bs-btn-color: #FFFFFF;
+    --bs-btn-bg: var(--main);
+    --bs-btn-border-color: var(--main);
+    --bs-btn-hover-color: #FFFFFF;
+    --bs-btn-hover-bg: var(--main-hover);
+    --bs-btn-hover-border-color: var(--main-hover);
+    --bs-btn-active-color: #FFFFFF;
+    --bs-btn-active-bg: var(--main-hover);
+    --bs-btn-active-border-color: var(--main-hover);
+    --bs-btn-disabled-color: #FFFFFF;
+    --bs-btn-disabled-bg: var(--main);
+    --bs-btn-disabled-border-color: var(--main);
+}
+/* Nebenknöpfe (Filter, Login, Hinzufügen, Mehr erfahren ...): weiss, grauer Rand, anthrazit Schrift */
+.btn-outline-primary {
+    --bs-btn-color: var(--main-dark);
+    --bs-btn-border-color: var(--main-light);
+    --bs-btn-hover-color: var(--main-dark);
+    --bs-btn-hover-bg: var(--main-tint);
+    --bs-btn-hover-border-color: var(--main-dark);
+    --bs-btn-active-color: var(--main-dark);
+    --bs-btn-active-bg: var(--main-tint);
+    --bs-btn-active-border-color: var(--main-dark);
+}
+.login-btn, .main-nav .add-btn { border-color: var(--main-light); color: var(--main-dark); }
+.login-btn:hover { background: var(--main-tint); color: var(--main-dark); border-color: var(--main-dark); }
+.pill { border-color: var(--main-light); }
+
+/* Gewähltes und Aktives in Himbeerrot: Ansicht, aktive Filter, gewählte Knöpfe im Formular */
+.view-switch .btn-dark,
+.filter-btn.btn-dark {
+    --bs-btn-bg: var(--main);
+    --bs-btn-border-color: var(--main);
+    --bs-btn-hover-bg: var(--main-hover);
+    --bs-btn-hover-border-color: var(--main-hover);
+    --bs-btn-active-bg: var(--main-hover);
+    --bs-btn-active-border-color: var(--main-hover);
+}
+.btn-check:checked + .pill { background: var(--main); border-color: var(--main); color: #FFFFFF; }
+
+/* Aktivitäten: hellgrauer Rand, beim Darüberfahren etwas dunkler mit neutralem Schatten */
+.activity-card:hover,
+.upload-card:hover,
+.map-list-item:hover,
+.map-list-item.active {
+    border-color: var(--main-light);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+.map-list-item.active { border-color: var(--main); }
+
+/* kein Foto: neutrale graue Fläche */
+.img-placeholder { background: var(--main-tint); color: var(--main-light); }
+
+/* Eingabefelder: grauer Rand beim Anklicken statt rosa */
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--main-dark);
+    box-shadow: 0 0 0 0.2rem rgba(58, 53, 55, 0.12);
+}
+.form-check-input:checked { background-color: var(--main); border-color: var(--main); }
+
+/* Footer-Text neutral */
+.site-footer { color: #D9D5D6; }
+
+/* ===================== NEU: Salbei zu Himbeerrot («Über mich», «Kontakt», Footer) ===================== */
+/* Grün ist die Gegenfarbe zu Rot: daneben leuchtet das Himbeerrot, ohne laut zu wirken.
+   Die Seiten setzen im Template die Klasse colored-page (block body_class in base.html). */
+:root {
+    --sage: #E6ECE4;        /* Hellsalbei: Hintergrund von Über mich und Kontakt */
+    --sage-line: #CFD9CB;   /* Rand der weissen Karten auf Salbei */
+    --sage-text: #4A5547;   /* Nebentext auf Salbei (gut lesbar) */
+    --olive: #3F4A3C;       /* dunkles Olivgrün: Footer */
+}
+body.colored-page { background: var(--sage); }
+.colored-page main h1, .colored-page main h2, .colored-page .about-name { color: #2F3B2D; }
+.colored-page .text-muted, .colored-page .about-stat-label { color: var(--sage-text) !important; }
+.colored-page .about-stat { background: #FFFFFF; border-color: var(--sage-line); }
+.colored-page .about-photo-empty { background: #FFFFFF; color: var(--sage-line); }
+.colored-page .contact-box { background: #FFFFFF; border-color: var(--sage-line); }
+.colored-page .contact-box .text-muted { color: var(--muted) !important; }
+/* Himbeerrote Akzente auf Salbei: Zahlen, Symbole, Hauptknopf */
+.colored-page .about-stat-number, .colored-page .contact-list i, .colored-page .about-social { color: var(--main); }
+.colored-page .btn-dark, .colored-page .contact-box .btn-dark {
+    --bs-btn-bg: var(--main); --bs-btn-color: #FFFFFF; --bs-btn-border-color: var(--main);
+    --bs-btn-hover-bg: var(--main-hover); --bs-btn-hover-color: #FFFFFF; --bs-btn-hover-border-color: var(--main-hover);
+}
+
+/* Footer dunkles Olivgrün mit hellem Text */
+.site-footer { background: var(--olive); color: var(--sage); border-top: none; }
+.site-footer a { color: var(--sage); }
+.site-footer a:hover { color: #FFFFFF; }
+.footer-brand, .footer-title { color: #FFFFFF; }
+.footer-bottom { border-top-color: rgba(230, 236, 228, 0.25); color: var(--sage); }
+
+/* NEU: Salbei-Hintergrund auf der ganzen Seite (base.html gibt jedem <body> die Klasse colored-page).
+   Inhalte stehen auf weissen Karten, Kopfzeile bleibt weiss, Footer olivgrün. */
+.colored-page .table { --bs-table-bg: transparent; }
+.colored-page .filter-box { background: #FFFFFF; }
+
+/* NEU: kein Streifen mehr über dem Logo */
+.top-bar { border-top: none; }
+
+/* NEU: Kategorie-Etiketten hellrosa mit dunkelweinroter Schrift (gut lesbar, Kontrast über 11) */
+.cat-badge { background: #F6E3E7; color: #4F1823; }
+
+/* NEU: Footer weiss (wie die Kopfzeile), dunkle Schrift, Links beim Darüberfahren himbeerrot */
+.site-footer { background: #FFFFFF; color: var(--muted); border-top: 1px solid var(--line); }
+.site-footer a { color: var(--main-dark); }
+.site-footer a:hover { color: var(--main); }
+.footer-brand { color: var(--main); }
+.footer-title { color: var(--main-dark); }
+.footer-bottom { border-top-color: var(--line); color: var(--muted); }
+
+/* NEU: Hintergrund heller: fast weiss mit einem Hauch Salbei auf allen Seiten,
+   das kräftigere Salbei nur noch auf «Über mich» und «Kontakt» */
+:root { --sage-pale: #F3F6F2; }
+body.colored-page { background: var(--sage-pale); }
+body.about-page, body.contact-page { background: var(--sage); }
+
+/* NEU: Hauptknöpfe (Anwenden, Anmelden, Freigeben ...) wie die Kategorien: hellrosa mit dunkelroter Schrift */
+.btn-primary {
+    --bs-btn-color: #4F1823;
+    --bs-btn-bg: #F6E3E7;
+    --bs-btn-border-color: #F6E3E7;
+    --bs-btn-hover-color: #4F1823;
+    --bs-btn-hover-bg: #EECFD6;
+    --bs-btn-hover-border-color: #EECFD6;
+    --bs-btn-active-color: #4F1823;
+    --bs-btn-active-bg: #EECFD6;
+    --bs-btn-active-border-color: #EECFD6;
+    --bs-btn-disabled-color: #4F1823;
+    --bs-btn-disabled-bg: #F6E3E7;
+    --bs-btn-disabled-border-color: #F6E3E7;
+}
+
+/* ===================== Blau statt Salbeigrün (Rot bleibt) =====================
+   Überall, wo vorher Salbei/Grün war, ist jetzt ein helles, gedämpftes Blau. */
+:root {
+    --sage-pale: #F2F5F9;   /* Hintergrund aller Seiten: fast weiss mit einem Hauch Blau */
+    --sage: #E3EAF2;        /* «Über mich» und «Kontakt»: helles Blau */
+    --sage-line: #C9D6E4;   /* Rand der weissen Karten auf Blau */
+    --sage-text: #4A5868;   /* Nebentext auf Blau (gut lesbar) */
+    --olive: #263A4D;       /* dunkles Blau (statt Olivgrün) */
+}
+.colored-page main h1, .colored-page main h2, .colored-page .about-name { color: #263A4D; }
+
+/* ===================== Grün statt Rot (Hintergrund bleibt blau) =====================
+   Melden und Löschen bleiben rot (--red), damit sie weiter nach Warnung aussehen. */
+:root {
+    --main: #2E7D5B;          /* Grün: Logo, Gewähltes (weisse Schrift gut lesbar) */
+    --main-hover: #1F4D3A;    /* Dunkelgrün beim Darüberfahren */
+    --bs-primary: #2E7D5B;
+    --bs-primary-rgb: 46, 125, 91;
+    --bs-link-hover-color: #2E7D5B;
+    --bs-link-hover-color-rgb: 46, 125, 91;
+}
+/* Kategorien und Hauptknöpfe: hellgrün mit dunkelgrüner Schrift (statt hellrosa) */
+.cat-badge { background: #E3F1E9; color: #1F4D3A; }
+.btn-primary {
+    --bs-btn-color: #1F4D3A; --bs-btn-bg: #E3F1E9; --bs-btn-border-color: #E3F1E9;
+    --bs-btn-hover-color: #1F4D3A; --bs-btn-hover-bg: #CDE6D8; --bs-btn-hover-border-color: #CDE6D8;
+    --bs-btn-active-color: #1F4D3A; --bs-btn-active-bg: #CDE6D8; --bs-btn-active-border-color: #CDE6D8;
+    --bs-btn-disabled-color: #1F4D3A; --bs-btn-disabled-bg: #E3F1E9; --bs-btn-disabled-border-color: #E3F1E9;
+}
+/* Nadeln grün (das Herz bleibt rot, siehe unten) */
+.map-pin i { color: var(--main); }
+.map-pin.is-active i { color: var(--main-hover); }
+
+/* ===================== Salbeigrün von vorher statt kräftigem Grün ===================== */
+:root {
+    --main: #55704F;          /* Salbeigrün, dunkel genug für weisse Schrift */
+    --main-hover: #3F4A3C;    /* Olive von vorher */
+    --bs-primary: #55704F;
+    --bs-primary-rgb: 85, 112, 79;
+    --bs-link-hover-color: #55704F;
+    --bs-link-hover-color-rgb: 85, 112, 79;
+}
+.cat-badge { background: #E6ECE4; color: #3F4A3C; }
+.btn-primary {
+    --bs-btn-color: #3F4A3C; --bs-btn-bg: #E6ECE4; --bs-btn-border-color: #E6ECE4;
+    --bs-btn-hover-color: #3F4A3C; --bs-btn-hover-bg: #D6E0D2; --bs-btn-hover-border-color: #D6E0D2;
+    --bs-btn-active-color: #3F4A3C; --bs-btn-active-bg: #D6E0D2; --bs-btn-active-border-color: #D6E0D2;
+    --bs-btn-disabled-color: #3F4A3C; --bs-btn-disabled-bg: #E6ECE4; --bs-btn-disabled-border-color: #E6ECE4;
+}
+
+/* ===================== NEU: So kommst du hin (Haltestellen mit Linien) ===================== */
+.info-box .bus-stops li { display: block; padding: 0.5rem 0; margin: 0; border-bottom: 1px solid var(--sage-line); }
+.info-box .bus-stops li i { width: auto; color: var(--main); }
+.info-box .bus-stops li:last-child { border-bottom: none; }
+.bus-lines { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; padding-left: 1.3rem; }
+.bus-line {
+    display: inline-block; min-width: 1.8rem; padding: 0.05rem 0.4rem; border-radius: 0.35rem;
+    font-size: 0.8rem; font-weight: 700; text-align: center; line-height: 1.4;
+    border: 1px solid rgba(0, 0, 0, 0.15);   /* helle Linienfarben (z.B. Hellblau) bleiben sichtbar */
+}
+
+/* ===================== NEU: mehrere Fotos beim Hinzufügen ===================== */
+.photo-thumbs { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.photo-thumbs:empty { display: none; }
+.photo-thumb {
+    position: relative; width: 110px; margin: 0;
+    border-radius: 0.6rem; overflow: hidden; background: #FFFFFF; border: 1px solid var(--sage-line);
+}
+.photo-thumb img { display: block; width: 100%; height: 80px; object-fit: cover; }
+.photo-cover {
+    position: absolute; top: 0.3rem; left: 0.3rem; padding: 0.05rem 0.4rem; border-radius: 0.4rem;
+    background: var(--main); color: #FFFFFF; font-size: 0.7rem; font-weight: 700;
+}
+.photo-remove { display: flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.4rem; font-size: 0.8rem; cursor: pointer; }
+.photo-remove .form-check-input { margin: 0; }
+.photo-thumb:has(.photo-remove input:checked) img { opacity: 0.35; }
+
+/* NEU: Herz wieder rot (Speichern, Favoriten), alles andere bleibt grün */
+.fav-btn:hover, .fav-btn.is-favorite { color: var(--red); }
+.fav-btn.fav-inline { border-color: var(--red); color: var(--red); }
+.fav-btn.fav-inline:hover { background: #F6E3E7; color: var(--red-dark); }
+.fav-btn.fav-inline.is-favorite { background: var(--red); border-color: var(--red); color: #FFFFFF; }
+
+/* ===================== NEU: Fotos durchblättern (Detailseite) ===================== */
+.gallery { position: relative; border-radius: 12px; overflow: hidden; background: #E9ECEF; }
+.gallery-track {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none;            /* Scrollbalken ausblenden (Firefox) */
+}
+.gallery-track::-webkit-scrollbar { display: none; }   /* Chrome, Safari */
+.gallery-track:focus-visible { outline: 3px solid var(--main); outline-offset: -3px; }
+.gallery-slide { flex: 0 0 100%; height: 380px; scroll-snap-align: start; }
+.gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: rgba(255, 255, 255, 0.9); color: var(--text, #222); font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.gallery-nav:hover { background: #FFFFFF; color: var(--main); }
+.gallery-prev { left: 0.75rem; }
+.gallery-next { right: 0.75rem; }
+.gallery-count {
+    position: absolute; right: 0.75rem; bottom: 0.75rem; padding: 0.1rem 0.6rem; border-radius: 1rem;
+    background: rgba(0, 0, 0, 0.6); color: #FFFFFF; font-size: 0.85rem; font-weight: 700;
+}
+.gallery-thumbs { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem; }
+.gallery-thumb {
+    flex: 0 0 auto; width: 76px; height: 56px; padding: 0; border-radius: 8px; overflow: hidden;
+    border: 2px solid transparent; background: none; opacity: 0.7;
+}
+.gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-thumb.is-active { border-color: var(--main); opacity: 1; }
+@media (max-width: 575.98px) {
+    .gallery-slide { height: 260px; }
+    .gallery-nav { display: none; }   /* auf dem Handy wischt man */
+}
+
+/* ===================== NEU: Mitteilungen und Zurückschicken ===================== */
+.notif-link { position: relative; display: inline-flex; align-items: center; font-size: 1.2rem; color: var(--main-dark); }
+.notif-link:hover, .notif-link.active { color: var(--main); }
+.notif-badge {
+    position: absolute; top: -0.35rem; right: -0.6rem; min-width: 1.15rem; height: 1.15rem; padding: 0 0.3rem;
+    border-radius: 1rem; background: var(--red); color: #FFFFFF; font-size: 0.7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+}
+.notif-item { background: #FFFFFF; border: 1px solid var(--sage-line); border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem; }
+.notif-item.is-new { border-color: var(--main); }
+.notif-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--red); margin-right: 0.45rem; vertical-align: 0.1rem; }
+.badge-returned { background: #F6E3E7; color: #4F1823; font-weight: 700; }
+
+/* ===================== NEU: rotes Herz bei Favoriten (Navigation) ===================== */
+.main-nav .nav-heart { color: var(--red); }
+
+/* ===================== NEU: Mein Profil ===================== */
+.profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.profile-stat {
+    display: flex; flex-direction: column; padding: 0.9rem 1rem; border-radius: 12px;
+    background: #FFFFFF; border: 1px solid var(--sage-line); color: inherit; text-decoration: none;
+}
+a.profile-stat:hover { border-color: var(--main); }
+.profile-stat-number { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.8rem; color: var(--main); line-height: 1.1; }
+.profile-stat-label { font-size: 0.85rem; color: var(--sage-text); }
+.profile-box { background: #FFFFFF; border: 1px solid var(--sage-line); border-radius: 12px; padding: 1.25rem; }
+.news-item { padding: 0.6rem 0; border-bottom: 1px solid var(--sage-line); }
+.news-item:first-child { padding-top: 0; }
+.news-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+/* NEU: Seite «Prüfen»: weisse Kästen wie die Karten */
+.moderation-item { background: #FFFFFF; border-color: var(--sage-line); }
+
+/* ===================== NEU: Fotos gross (Lightbox) ===================== */
+.gallery-slide { cursor: zoom-in; }
+.photo-viewer .modal-content { background: rgba(15, 15, 15, 0.96); border: none; border-radius: 0; }
+.viewer-track {
+    display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.viewer-track::-webkit-scrollbar { display: none; }
+.viewer-slide { flex: 0 0 100%; height: 100%; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding: 3.5rem 1rem; }
+.viewer-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.viewer-close, .viewer-nav {
+    position: absolute; z-index: 2; border: none; border-radius: 50%; width: 44px; height: 44px;
+    background: rgba(255, 255, 255, 0.15); color: #FFFFFF; font-size: 1.3rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.viewer-close:hover, .viewer-nav:hover { background: rgba(255, 255, 255, 0.3); }
+.viewer-close { top: 1rem; right: 1rem; }
+.viewer-nav { top: 50%; transform: translateY(-50%); }
+.viewer-prev { left: 1rem; }
+.viewer-next { right: 1rem; }
+.viewer-count { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-weight: 700; }
+@media (max-width: 575.98px) { .viewer-nav { display: none; } }
+
+/* NEU: beim Hinzufügen die Feldnamen (Name, Adresse ...) fett und etwas grösser */
+#addForm .form-label { font-weight: 700; font-size: 1.05rem; }
+#addForm .form-label .text-muted { font-weight: 400; font-size: 0.85rem; }   /* «(optional)» bleibt normal */
+
+/* ===================== NEU: Sprache wechseln (DE / FR) ===================== */
+.language-switch { display: flex; align-items: center; gap: 0.35rem; margin: 0; }
+.language-switch .language-button { padding: 0; opacity: 0.5; }
+.language-switch .language-button.is-active { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+.language-switch .language-button:hover { opacity: 1; }
+.viewer-slide { position: relative; }
+.viewer-delete { position: absolute; bottom: 3.2rem; left: 50%; transform: translateX(-50%); }
+
+/* ===================== NEU: Fotos beim Hinzufügen (sammeln, entfernen, Titelbild, Ausschnitt) ===================== */
+.photo-thumb { position: relative; }
+.photo-thumb .photo-cover { display: none; }
+.photo-thumb.is-cover { border: 2px solid var(--main); }
+.photo-thumb.is-cover .photo-cover { display: inline-block; }
+.photo-thumb.is-removed { display: none; }
+.photo-x {
+    position: absolute; top: 0.3rem; right: 0.3rem; width: 26px; height: 26px; border: none; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6); color: #FFFFFF; font-size: 0.75rem; display: flex; align-items: center; justify-content: center;
+}
+.photo-x:hover { background: var(--red); }
+.photo-make-cover {
+    display: block; width: 100%; border: none; background: #FFFFFF; color: var(--main);
+    font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.2rem;
+}
+.photo-thumb.is-cover .photo-make-cover { visibility: hidden; }
+.cover-frame {
+    width: 100%; max-width: 400px; aspect-ratio: 2 / 1; border-radius: 12px; overflow: hidden;
+    cursor: grab; touch-action: none; background: #E9ECEF; border: 1px solid var(--sage-line);
+}
+.cover-frame:active { cursor: grabbing; }
+.cover-frame img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; pointer-events: none; }
+
+/* NEU: Schalter «Jetzt geöffnet» im Filter: eingeschaltet grün wie die anderen aktiven Filter */
+.btn-check:checked + .open-now-btn { background: var(--main); border-color: var(--main); color: #FFFFFF; }
+
+/* NEU: Zahl in der Navigation (neue Mitteilungen, zu prüfen): hellgrün wie die anderen Knöpfe statt rot */
+.nav-count { background: #E6ECE4; color: #3F4A3C; }

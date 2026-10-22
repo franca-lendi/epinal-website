@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Adresse suchen + Karte. Wird in add_activity.html eingebunden.
 
@@ -13,37 +14,37 @@ Adresse suchen + Karte. Wird in add_activity.html eingebunden.
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 
 <div class="mb-3 address-picker">
-    <label for="{{ form.address.id_for_label }}" class="form-label">Adresse</label>
+    <label for="{{ form.address.id_for_label }}" class="form-label">{% translate "Adresse" %}</label>
     <div class="position-relative">
         <div class="input-group">
             <span class="input-group-text bg-white"><i class="bi bi-geo-alt"></i></span>
             <input type="text" name="{{ form.address.html_name }}" id="{{ form.address.id_for_label }}"
                    value="{{ form.address.value|default_if_none:'' }}" class="form-control"
-                   placeholder="z.B. 2 Faubourg de Poissompré" autocomplete="off"
+                   placeholder="{% translate "z.B. 2 Faubourg de Poissompré" %}" autocomplete="off"
                    role="combobox" aria-expanded="false" aria-controls="addressSuggestions" aria-autocomplete="list">
         </div>
         <!-- Vorschläge erscheinen hier -->
         <ul class="list-group address-suggestions d-none" id="addressSuggestions" role="listbox"></ul>
     </div>
-    <div class="form-text" id="addressHint">Tippe die Adresse und wähle einen Vorschlag. Oder klicke auf die Karte.</div>
+    <div class="form-text" id="addressHint">{% translate "Tippe die Adresse und wähle einen Vorschlag. Oder klicke auf die Karte." %}</div>
     {% for error in form.address.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
 
     <div class="row g-2 mt-1">
         <div class="col-4">
-            <label for="{{ form.postal_code.id_for_label }}" class="form-label small text-muted mb-1">PLZ</label>
+            <label for="{{ form.postal_code.id_for_label }}" class="form-label small text-muted mb-1">{% translate "PLZ" %}</label>
             <input type="text" name="{{ form.postal_code.html_name }}" id="{{ form.postal_code.id_for_label }}"
                    value="{{ form.postal_code.value|default_if_none:'' }}" class="form-control form-control-sm">
         </div>
         <div class="col-8">
-            <label for="{{ form.city.id_for_label }}" class="form-label small text-muted mb-1">Ort</label>
+            <label for="{{ form.city.id_for_label }}" class="form-label small text-muted mb-1">{% translate "Ort" %}</label>
             <input type="text" name="{{ form.city.html_name }}" id="{{ form.city.id_for_label }}"
                    value="{{ form.city.value|default_if_none:'' }}" class="form-control form-control-sm" required>
         </div>
     </div>
 
     <!-- Karte -->
-    <div id="addressMap" class="address-map mt-3" aria-label="Karte zum Auswählen des Ortes"></div>
-    <div class="small text-muted mt-1" id="mapStatus">Noch kein Ort gewählt.</div>
+    <div id="addressMap" class="address-map mt-3" aria-label="{% translate "Karte zum Auswählen des Ortes" %}"></div>
+    <div class="small text-muted mt-1" id="mapStatus">{% translate "Noch kein Ort gewählt." %}</div>
 
     <!-- versteckte Felder für die Koordinaten -->
     {{ form.latitude }}
@@ -56,6 +57,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // Adressdienst der Géoplateforme (IGN), kostenlos, ohne Schlüssel, max. 50 Anfragen pro Sekunde
     const API = "https://data.geopf.fr/geocodage";
     const EPINAL = [48.1724, 6.4496];  // Zentrum von Épinal (Breite, Länge)
+
+    // Texte für JavaScript (übersetzt, escapejs wegen Apostrophen im Französischen)
+    const T_OSM_CREDIT = "{% autoescape off %}{% filter escapejs %}{% blocktranslate with link='<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' %}{{ link }}-Mitwirkende{% endblocktranslate %}{% endfilter %}{% endautoescape %}";
+    const T_POINT_SET = "{% autoescape off %}{% filter escapejs %}{% translate "Ort gewählt. Du kannst die Nadel verschieben, falls sie nicht ganz stimmt." %}{% endfilter %}{% endautoescape %}";
+    const T_CHOOSE = "{% autoescape off %}{% filter escapejs %}{% translate "Wähle einen Vorschlag." %}{% endfilter %}{% endautoescape %}";
+    const T_NOT_FOUND = "{% autoescape off %}{% filter escapejs %}{% translate "Keine Adresse gefunden. Du kannst auch auf die Karte klicken." %}{% endfilter %}{% endautoescape %}";
+    const T_OFFLINE = "{% autoescape off %}{% filter escapejs %}{% translate "Adresssuche gerade nicht erreichbar. Tippe die Adresse von Hand und klicke den Ort auf der Karte an." %}{% endfilter %}{% endautoescape %}";
+    const T_CHOOSE_OR_CLICK = "{% autoescape off %}{% filter escapejs %}{% translate "Wähle einen Vorschlag oder klicke auf die Karte." %}{% endfilter %}{% endautoescape %}";
 
     const input = document.getElementById("{{ form.address.id_for_label }}");
     const list = document.getElementById("addressSuggestions");
@@ -73,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // OpenStreetMap verlangt zu wissen, von welcher Website die Anfrage kommt (sonst "Access blocked").
         // Django schickt das standardmässig nicht mit, deshalb hier nur für die Kartenbilder erlauben.
         referrerPolicy: "strict-origin-when-cross-origin",
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        attribution: '&copy; ' + T_OSM_CREDIT,
     }).addTo(map);
 
     let marker = null;
@@ -93,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
             marker.setLatLng([latitude, longitude]);
         }
         map.setView([latitude, longitude], zoom || map.getZoom());
-        status.textContent = "Ort gewählt. Du kannst die Nadel verschieben, falls sie nicht ganz stimmt.";
+        status.textContent = T_POINT_SET;
     }
 
     // Beim Bearbeiten: gespeicherten Ort zeigen
@@ -171,9 +180,9 @@ document.addEventListener("DOMContentLoaded", function () {
             results = data.features || [];
             active = -1;
             showResults();
-            hint.textContent = results.length ? "Wähle einen Vorschlag." : "Keine Adresse gefunden. Du kannst auch auf die Karte klicken.";
+            hint.textContent = results.length ? T_CHOOSE : T_NOT_FOUND;
         } catch (err) {
-            hint.textContent = "Adresssuche gerade nicht erreichbar. Tippe die Adresse von Hand und klicke den Ort auf der Karte an.";
+            hint.textContent = T_OFFLINE;
         }
     }
 
@@ -181,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Wer die Adresse ändert, muss den Ort neu bestätigen
         lat.value = "";
         lon.value = "";
-        status.textContent = "Wähle einen Vorschlag oder klicke auf die Karte.";
+        status.textContent = T_CHOOSE_OR_CLICK;
         clearTimeout(timer);
         const text = input.value.trim();
         if (text.length < 3) {

@@ -10,7 +10,8 @@ from PIL import Image as PILImage
 
 import datetime
 
-from .models import Activity, ActivityImage, Category, ContactMessage, Favorite, Location, Rating, Report, SiteInfo, VisitCounter
+from .models import (Activity, ActivityImage, Category, ContactMessage, Favorite, Location, Notification, Rating, Report,
+                     SiteInfo, VisitCounter)
 
 TEMP_MEDIA = tempfile.mkdtemp()
 
@@ -54,13 +55,13 @@ class GuideTests(TestCase):
             "city": "Épinal",
             "latitude": "48.1752000",
             "longitude": "6.4569000",
-            "price": "0",
+            "price_level": "0",
             "duration_minutes": "90",
             "website": "",
             "phone": "",
             "email": "",
             "hours_mo_open1": "10:00", "hours_mo_close1": "18:00",
-            "image": fake_photo(),  # Foto ist zum Senden Pflicht
+            "photos": fake_photo(),  # Foto ist zum Senden Pflicht
         }
         data.update(extra)
         return data
@@ -74,7 +75,7 @@ class GuideTests(TestCase):
 
     def test_add_waits_for_approval(self):
         self.client.login(username="anna", password="geheim12345")
-        response = self.client.post(reverse("add_activity"), self.form_data(image=fake_photo()))
+        response = self.client.post(reverse("add_activity"), self.form_data(photos=fake_photo()))
         activity = Activity.objects.get(title="Patinoire")
         self.assertRedirects(response, reverse("my_uploads"))
         self.assertEqual(activity.status, "pending")
@@ -137,7 +138,7 @@ class GuideTests(TestCase):
     def test_photo_required_to_send(self):
         self.client.login(username="anna", password="geheim12345")
         data = self.form_data()
-        del data["image"]
+        del data["photos"]
         response = self.client.post(reverse("add_activity"), data)
         self.assertContains(response, "Bitte füge ein Foto hinzu")
         self.assertFalse(Activity.objects.exists())
@@ -318,15 +319,16 @@ class CategorySuggestionTests(TestCase):
         self.andere = Category.objects.get(name="Andere", parent=self.sport)
 
     def post(self, rows, suggestion=""):
-        # rows = [(Hauptkategorie, Unterkategorie oder None), ...] wie die Zeilen im Formular
+        # rows = [(Hauptkategorie, Unterkategorie, Liste von Unterkategorien oder None), ...] wie die Zeilen im Formular
         data = {
-            "title": "Rudern auf der Mosel", "new_1": suggestion, "image": fake_photo(),
+            "title": "Rudern auf der Mosel", "new_1": suggestion, "photos": fake_photo(),
             "description": "x", "address": "Quai", "postal_code": "88000", "city": "Épinal",
-            "latitude": "48.17", "longitude": "6.45", "price": "0",
+            "latitude": "48.17", "longitude": "6.45", "price_level": "0",
         }
         for i, (main, sub) in enumerate(rows, start=1):
             data[f"main_{i}"] = main.pk
-            data[f"sub_{i}"] = sub.pk if sub else ""
+            subs = sub if isinstance(sub, list) else [sub] if sub else []
+            data[f"sub_{i}"] = [c.pk for c in subs]
         return self.client.post(reverse("add_activity"), data)
 
     def saved(self):
@@ -340,6 +342,19 @@ class CategorySuggestionTests(TestCase):
     def test_main_with_subcategory(self):
         self.post([(self.sport, self.fussball)])
         self.assertEqual(self.saved(), {"Fussball"})
+
+    def test_several_subcategories(self):
+        # NEU: bei «Genauer?» mehrere antippen, z.B. Restaurant und Café
+        essen = Category.objects.get(name="Essen & Trinken")
+        restaurant = Category.objects.get(name="Restaurant")
+        cafe = Category.objects.get(name="Café")
+        self.post([(essen, [restaurant, cafe])])
+        self.assertEqual(self.saved(), {"Restaurant", "Café"})
+
+    def test_several_subcategories_with_suggestion(self):
+        klettern = Category.objects.get(name="Klettern")
+        self.post([(self.sport, [klettern, self.andere])], "Rudern")
+        self.assertEqual(self.saved(), {"Klettern", "Rudern"})
 
     def test_subcategory_must_belong_to_main(self):
         # Fussball passt nicht zu Natur & Parks: dann gilt einfach die Hauptkategorie
@@ -395,8 +410,8 @@ class CategorySuggestionTests(TestCase):
 
     def test_new_main_category_from_dropdown(self):
         data = {
-            "title": "Rudern auf der Mosel", "main_1": "new", "new_1": "Wassersport", "image": fake_photo(),
-            "description": "x", "address": "Quai", "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0",
+            "title": "Rudern auf der Mosel", "main_1": "new", "new_1": "Wassersport", "photos": fake_photo(),
+            "description": "x", "address": "Quai", "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price_level": "0",
         }
         self.client.post(reverse("add_activity"), data)
         category = Activity.objects.get(title="Rudern auf der Mosel").categories.get()
@@ -410,7 +425,7 @@ class CategorySuggestionTests(TestCase):
 
     def test_new_main_without_text_is_error(self):
         data = {"title": "X", "main_1": "new", "new_1": "", "description": "x", "address": "Quai",
-                "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0", "image": fake_photo()}
+                "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price_level": "0", "photos": fake_photo()}
         response = self.client.post(reverse("add_activity"), data)
         self.assertContains(response, "Schreib kurz, was fehlt.")
 
@@ -423,8 +438,20 @@ class CategorySuggestionTests(TestCase):
         activity = Activity.objects.get(title="Rudern auf der Mosel")
         form = self.client.get(reverse("edit_activity", args=[activity.pk])).context["form"]
         rows = form.category_rows
-        self.assertEqual({(r["main_value"], r["sub_value"]) for r in rows if r["main_value"]},
-                         {(str(self.sport.pk), str(self.fussball.pk)), (str(self.natur.pk), "")})
+        self.assertEqual({(r["main_value"], tuple(r["sub_values"])) for r in rows if r["main_value"]},
+                         {(str(self.sport.pk), (str(self.fussball.pk),)), (str(self.natur.pk), ())})
+
+    def test_edit_shows_several_subcategories_in_one_row(self):
+        essen = Category.objects.get(name="Essen & Trinken")
+        restaurant = Category.objects.get(name="Restaurant")
+        cafe = Category.objects.get(name="Café")
+        self.post([(essen, [restaurant, cafe])])
+        activity = Activity.objects.get(title="Rudern auf der Mosel")
+        response = self.client.get(reverse("edit_activity", args=[activity.pk]))
+        rows = [r for r in response.context["form"].category_rows if r["main_value"]]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(set(rows[0]["sub_values"]), {str(restaurant.pk), str(cafe.pk)})
+        self.assertContains(response, f'value="{cafe.pk}"')
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA)
@@ -508,7 +535,7 @@ class OpeningHoursTests(TestCase):
     def post(self, **hours):
         data = {
             "title": "Musée", "main_1": self.sport.pk, "description": "x", "address": "Quai",
-            "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price": "0", "image": fake_photo(), **hours,
+            "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price_level": "0", "photos": fake_photo(), **hours,
         }
         return self.client.post(reverse("add_activity"), data)
 
@@ -572,15 +599,16 @@ class SearchFilterFavoriteTests(TestCase):
         self.museum = Category.objects.get(name="Kultur & Museen")   # umbenannt in Migration 0012
 
         def make(title, category, price=0, date=None, address="", description="Text", status="published"):
+            # price = Preisstufe (0 = Gratis, 1 = bis 10 €, 2 = 10–20 € ...)
             location = Location.objects.create(address=address, city="Épinal")
             activity = Activity.objects.create(user=self.anna, location=location, title=title,
-                                               description=description, price=price, event_date=date, status=status)
+                                               description=description, price_level=price, event_date=date, status=status)
             activity.categories.set([category])
             return activity
 
-        self.eis = make("Patinoire", self.sport, price=6, address="2 Faubourg de Poissompré")
+        self.eis = make("Patinoire", self.sport, price=1, address="2 Faubourg de Poissompré")
         self.parc = make("Parc du Château", self.park, description="Grosser Park mit Tieren")
-        self.musee = make("Musée de l'Image", self.museum, price=12)
+        self.musee = make("Musée de l'Image", self.museum, price=2)
         self.fest = make("Fête foraine", self.sport, price=0, date=datetime.date(2026, 11, 20))
         self.draft = make("Entwurf Park", self.park, status="draft")
 
@@ -635,10 +663,11 @@ class SearchFilterFavoriteTests(TestCase):
         self.assertEqual(titles, {"Patinoire", "Fête foraine", "Parc du Château"})
 
     def test_price_filter(self):
-        self.assertEqual(self.titles(max_price=0), {"Parc du Château", "Fête foraine"})
-        self.assertEqual(self.titles(max_price=10), {"Parc du Château", "Fête foraine", "Patinoire"})
-        self.assertEqual(len(self.titles(max_price=100)), 4)  # ganz rechts = egal
-        self.assertEqual(len(self.titles(max_price="quatsch")), 4)  # falsche Eingabe = egal
+        self.assertEqual(self.titles(price=0), {"Parc du Château", "Fête foraine"})
+        self.assertEqual(self.titles(price=1), {"Parc du Château", "Fête foraine", "Patinoire"})  # bis 10 €
+        self.assertEqual(len(self.titles(price="")), 4)  # Egal
+        self.assertEqual(len(self.titles(price="quatsch")), 4)  # falsche Eingabe = egal
+        self.assertEqual(len(self.titles(price=9)), 4)  # gibt es nicht = egal
 
     def test_date_filter_keeps_undated(self):
         # Fest am 20.11.: im Zeitraum Dezember nicht dabei, die anderen (ohne Datum) schon
@@ -647,7 +676,7 @@ class SearchFilterFavoriteTests(TestCase):
         self.assertIn("Patinoire", self.titles(date_from="2026-12-01"))
 
     def test_combined(self):
-        self.assertEqual(self.titles(q="parc", max_price=0, category=self.park.pk), {"Parc du Château"})
+        self.assertEqual(self.titles(q="parc", price=0, category=self.park.pk), {"Parc du Château"})
 
     # ---------- Favoriten ----------
 
@@ -734,8 +763,8 @@ class ModerationAndUploadsTests(TestCase):
         self.client.login(username="anna", password="geheim12345")
         self.client.post(reverse("edit_activity", args=[self.activity.pk]), {
             "title": "Patinoire neu", "main_1": self.activity.categories.get().pk, "description": "x",
-            "address": "Rue 1", "city": "Épinal", "price": "0", "latitude": "48.17", "longitude": "6.45",
-            "image": fake_photo(),
+            "address": "Rue 1", "city": "Épinal", "price_level": "0", "latitude": "48.17", "longitude": "6.45",
+            "photos": fake_photo(),
         })
         self.activity.refresh_from_db()
         self.assertEqual(self.activity.title, "Patinoire neu")
@@ -869,3 +898,591 @@ class LoginAndVisitTests(TestCase):
         self.assertEqual(page.context["stats"]["visitors"], 42)
         self.assertContains(page, "Besucher:innen")
 
+
+class AnreiseTests(TestCase):
+    """NEU: So kommst du hin: Haltestellen aus den Fahrplandaten, Route-Links, Anreise-Feld"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        location = Location.objects.create(address="Place des Vosges", city="Épinal",
+                                           latitude="48.1726000", longitude="6.4495000")
+        self.activity = Activity.objects.create(user=self.anna, location=location, title="Basilique",
+                                                description="x", status="published")
+
+    def fake_gtfs(self, path):
+        # kleine GTFS-Datei: Linie 04 fährt oft (bleibt), Schulbus S1 nur einmal (fällt weg)
+        import zipfile
+        files = {
+            "routes.txt": "route_id,route_short_name,route_long_name,route_color,route_text_color\n"
+                          "04,04,Gare - Saut le Cerf,FF0000,FFFFFF\nS1,S1,Schulbus,FF8000,\n",
+            "stops.txt": "stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station\n"
+                         "P1,Préfecture,48.1730,6.4500,1,\nP1A,Préfecture,48.1731,6.4501,0,P1\n"
+                         "P2,maurice ravel,48.1800,6.4600,0,\nFAR,Golbey,48.2000,6.4200,0,\n",
+            "trips.txt": "route_id,service_id,trip_id\n" + "".join(f"04,s,t{i}\n" for i in range(12)) + "S1,s,school\n",
+            "stop_times.txt": "trip_id,stop_id,stop_sequence\n"
+                              + "".join(f"t{i},P1A,1\nt{i},FAR,2\n" for i in range(12)) + "school,P2,1\n",
+        }
+        with zipfile.ZipFile(path, "w") as z:
+            for name, text in files.items():
+                z.writestr(name, text)
+
+    def import_stops(self):
+        from django.core.management import call_command
+        path = tempfile.mktemp(suffix=".zip")
+        self.fake_gtfs(path)
+        call_command("import_bus_stops", file=path, stdout=io.StringIO())
+
+    def test_import_groups_platforms_and_skips_school_lines(self):
+        from .models import BusStop
+        self.import_stops()
+        self.assertEqual(sorted(BusStop.objects.values_list("name", flat=True)), ["Golbey", "Préfecture"])
+        stop = BusStop.objects.get(name="Préfecture")
+        self.assertEqual(stop.lines, [{"name": "4", "color": "#FF0000", "text": "#FFFFFF"}])
+
+    def test_detail_shows_nearest_stop_and_route(self):
+        self.import_stops()
+        response = self.client.get(reverse("activity_detail", args=[self.activity.pk]))
+        self.assertContains(response, "So kommst du hin")
+        self.assertContains(response, "Préfecture")
+        self.assertNotContains(response, "Golbey")  # über 800 m weit weg
+        self.assertContains(response, "travelmode=transit")
+        self.assertContains(response, "destination=48.172600%2C6.449500")
+
+    def test_route_without_bus_data(self):
+        response = self.client.get(reverse("activity_detail", args=[self.activity.pk]))
+        self.assertContains(response, "Mit dem Bus")
+        self.assertNotContains(response, "Haltestellen und Linien")
+
+    def test_transport_note_shown(self):
+        self.activity.transport_note = "Eingang hinter dem Parkplatz"
+        self.activity.save()
+        response = self.client.get(reverse("activity_detail", args=[self.activity.pk]))
+        self.assertContains(response, "Eingang hinter dem Parkplatz")
+
+    def test_add_form_has_transport_note(self):
+        self.client.force_login(self.anna)
+        self.assertContains(self.client.get(reverse("add_activity")), "So kommst du hin")
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class PriceAndPhotosTests(TestCase):
+    """NEU: Preis als Stufe und mehrere Fotos beim Hinzufügen"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+
+    def data(self, **extra):
+        data = {
+            "title": "Kletterhalle", "main_1": self.sport.pk, "description": "x", "address": "Rue 1",
+            "city": "Épinal", "latitude": "48.17", "longitude": "6.45", "price_level": "2",
+            "photos": [fake_photo("a.jpg"), fake_photo("b.jpg"), fake_photo("c.jpg")],
+        }
+        data.update(extra)
+        return data
+
+    def test_price_level_saved_and_shown(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        self.assertEqual(activity.price_level, 2)
+        Activity.objects.update(status="published")
+        self.assertContains(self.client.get(reverse("activity_detail", args=[activity.pk])), "10–20 €")
+
+    def test_price_must_be_chosen(self):
+        data = self.data()
+        del data["price_level"]
+        response = self.client.post(reverse("add_activity"), data)
+        self.assertContains(response, "Bitte wähle einen Preis.")
+        self.assertFalse(Activity.objects.exists())
+
+    def test_new_activity_has_no_price_preselected(self):
+        self.assertEqual(self.client.get(reverse("add_activity")).context["form"]["price_level"].value(), None)
+
+    def test_several_photos_first_is_cover(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        self.assertIn("a", activity.image.name)
+        self.assertEqual(activity.images.count(), 2)
+
+    def test_too_many_photos(self):
+        response = self.client.post(reverse("add_activity"), self.data(photos=[fake_photo(f"{i}.jpg") for i in range(11)]))
+        self.assertContains(response, "Höchstens 10 Fotos")
+        self.assertFalse(Activity.objects.exists())
+
+    def test_edit_remove_cover_next_photo_becomes_cover(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        second = activity.images.order_by("created_at").first()
+        second_name = second.image.name
+        self.client.post(reverse("edit_activity", args=[activity.pk]),
+                         self.data(photos=[], delete_photos=["cover"]))
+        activity.refresh_from_db()
+        self.assertEqual(activity.image.name, second_name)
+        self.assertEqual(activity.images.count(), 1)
+
+    def test_edit_cannot_remove_all_photos_when_sending(self):
+        self.client.post(reverse("add_activity"), self.data(photos=[fake_photo("a.jpg")]))
+        activity = Activity.objects.get()
+        response = self.client.post(reverse("edit_activity", args=[activity.pk]),
+                                    self.data(photos=[], delete_photos=["cover"]))
+        self.assertContains(response, "Bitte füge ein Foto hinzu")
+        activity.refresh_from_db()
+        self.assertTrue(activity.image)
+
+    def test_edit_adds_photos(self):
+        self.client.post(reverse("add_activity"), self.data(photos=[fake_photo("a.jpg")]))
+        activity = Activity.objects.get()
+        self.client.post(reverse("edit_activity", args=[activity.pk]),
+                         self.data(photos=[fake_photo("d.jpg"), fake_photo("e.jpg")]))
+        activity.refresh_from_db()
+        self.assertIn("a", activity.image.name)
+        self.assertEqual(activity.images.count(), 2)
+
+    # ---------- NEU: Fotos durchblättern und abgekürzte Namen ----------
+
+    def test_gallery_has_cover_and_photos(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        Activity.objects.update(status="published")
+        response = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        gallery = response.context["gallery"]
+        self.assertEqual(len(gallery), 3)
+        self.assertEqual(gallery[0]["url"], activity.image.url)  # Titelbild zuerst
+        self.assertContains(response, "1</span> / 3")
+
+    def test_mask_name(self):
+        from .templatetags.guide_extras import mask_name
+        self.assertEqual(mask_name("franca"), "fr***")
+        self.assertEqual(mask_name("Bo"), "B***")
+        self.assertEqual(mask_name(""), "***")
+
+    def test_review_shows_masked_name(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        Activity.objects.update(status="published")
+        ben = User.objects.create_user("benjamin", "b@test.ch", "geheim12345")
+        Rating.objects.create(user=ben, activity=activity, rating=4, title="Super")
+        response = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        self.assertContains(response, "be***")
+        self.assertNotContains(response, "benjamin")
+
+
+class ReturnAndNotificationTests(TestCase):
+    """NEU: Zurückschicken, Vorschläge verwerfen, Mitteilungen"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.admin = User.objects.create_user("chefin", "chefin@test.ch", "geheim12345", is_staff=True)
+        location = Location.objects.create(city="Épinal", latitude="48.17", longitude="6.45", address="Rue 1")
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+        self.new = Activity.objects.create(user=self.anna, location=location, title="Neu", description="x",
+                                           status="pending", image="activities/a.jpg")
+        self.new.categories.set([self.sport])
+        self.online = Activity.objects.create(user=self.anna, location=location, title="Online", description="x",
+                                              status="published")
+
+    def test_return_activity_with_note_and_notification(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("return_activity", args=[self.new.pk]), {"message": "Bitte ein eigenes Foto."})
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "returned")
+        self.assertEqual(self.new.return_note, "Bitte ein eigenes Foto.")
+        note = Notification.objects.get(user=self.anna)
+        self.assertIn("Bitte ein eigenes Foto.", note.text)
+        self.assertEqual(note.link, reverse("edit_activity", args=[self.new.pk]))
+
+    def test_return_needs_message(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("return_activity", args=[self.new.pk]), {"message": " "})
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "pending")
+
+    def test_only_admin_can_return(self):
+        self.client.force_login(self.anna)
+        self.client.post(reverse("return_activity", args=[self.new.pk]), {"message": "x"})
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "pending")
+
+    def test_returned_activity_resent_waits_for_approval(self):
+        self.new.status, self.new.return_note = "returned", "Foto fehlt"
+        self.new.save()
+        self.client.force_login(self.anna)
+        page = self.client.get(reverse("edit_activity", args=[self.new.pk]))
+        self.assertContains(page, "Foto fehlt")
+        data = {"title": "Neu", "main_1": self.sport.pk, "description": "x", "address": "Rue 1", "city": "Épinal",
+                "latitude": "48.17", "longitude": "6.45", "price_level": "0"}
+        self.client.post(reverse("edit_activity", args=[self.new.pk]), {**data, "save_draft": ""})
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "returned")  # Entwurf: bleibt zurückgeschickt
+        self.client.post(reverse("edit_activity", args=[self.new.pk]), data)
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.status, "pending")
+        self.assertEqual(self.new.return_note, "")
+
+    def test_returned_in_drafts_tab(self):
+        self.new.status = "returned"
+        self.new.save()
+        self.client.force_login(self.anna)
+        page = self.client.get(reverse("my_uploads") + "?tab=drafts")
+        self.assertContains(page, "Zurückgeschickt")
+
+    def test_return_error_report_keeps_activity_online(self):
+        report = Report.objects.create(user=self.admin, activity=self.online, reason="error",
+                                       description="Am Montag geschlossen")
+        self.client.force_login(self.admin)
+        self.client.post(reverse("return_report", args=[report.pk]), {"message": "Danke!"})
+        report.refresh_from_db()
+        self.online.refresh_from_db()
+        self.assertEqual(report.status, "zurückgeschickt")
+        self.assertEqual(self.online.status, "published")
+        text = Notification.objects.get(user=self.anna).text
+        self.assertIn("Am Montag geschlossen", text)
+        self.assertIn("Danke!", text)
+        self.assertEqual(self.client.get(reverse("moderation")).context["moderation_count"], 1)  # nur noch «Neu»
+
+    def test_reject_sub_suggestion_moves_to_andere(self):
+        rudern = Category.objects.create(name="Rudern", parent=self.sport, approved=False)
+        self.online.categories.set([rudern])
+        self.client.force_login(self.admin)
+        self.client.post(reverse("reject_category", args=[rudern.pk]))
+        self.assertFalse(Category.objects.filter(name="Rudern").exists())
+        category = self.online.categories.get()
+        self.assertEqual((category.name, category.parent), ("Andere", self.sport))
+        self.assertIn("Sport & Bewegung", Notification.objects.get(user=self.anna).text)
+
+    def test_reject_main_suggestion_asks_for_category(self):
+        wasser = Category.objects.create(name="Wassersport", approved=False)
+        self.online.categories.set([wasser])
+        self.client.force_login(self.admin)
+        self.client.post(reverse("reject_category", args=[wasser.pk]))
+        self.assertFalse(self.online.categories.exists())
+        self.assertIn("Bitte wähle", Notification.objects.get(user=self.anna).text)
+
+    def test_approve_sends_notification(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("approve_activity", args=[self.new.pk]))
+        self.assertIn("freigegeben", Notification.objects.get(user=self.anna).text)
+
+    def test_bell_count_and_page_marks_read(self):
+        Notification.objects.create(user=self.anna, text="Hallo")
+        self.client.force_login(self.anna)
+        page = self.client.get(reverse("activities"))
+        self.assertEqual(page.context["unread_notifications"], 1)
+        page = self.client.get(reverse("notifications"))
+        self.assertContains(page, "Hallo")
+        self.assertFalse(Notification.objects.filter(read=False).exists())
+        self.assertEqual(self.client.get(reverse("activities")).context["unread_notifications"], 0)
+
+
+class ProfileTests(TestCase):
+    """NEU: Mein Profil"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        User.objects.create_user("ben", "ben@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+
+    def test_page_shows_data(self):
+        page = self.client.get(reverse("profile"))
+        self.assertContains(page, "anna@test.ch")
+        self.assertContains(page, "Dabei seit")
+
+    def test_change_username(self):
+        self.client.post(reverse("profile"), {"save_profile": "", "username": "anna_m", "email": "anna@test.ch"})
+        self.anna.refresh_from_db()
+        self.assertEqual(self.anna.username, "anna_m")
+
+    def test_email_of_someone_else_not_allowed(self):
+        page = self.client.post(reverse("profile"), {"save_profile": "", "username": "anna", "email": "BEN@test.ch"})
+        self.assertContains(page, "schon registriert")
+
+    def test_username_taken_or_with_at(self):
+        page = self.client.post(reverse("profile"), {"save_profile": "", "username": "ben", "email": "anna@test.ch"})
+        self.assertEqual(page.status_code, 200)
+        page = self.client.post(reverse("profile"), {"save_profile": "", "username": "a@b", "email": "anna@test.ch"})
+        self.assertContains(page, "kein @")
+        self.anna.refresh_from_db()
+        self.assertEqual(self.anna.username, "anna")
+
+    def test_change_password_stays_logged_in(self):
+        self.client.post(reverse("profile"), {"save_password": "", "old_password": "geheim12345",
+                                              "new_password1": "NeuesPasswort987", "new_password2": "NeuesPasswort987"})
+        self.anna.refresh_from_db()
+        self.assertTrue(self.anna.check_password("NeuesPasswort987"))
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 200)
+
+    def test_needs_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("profile")).status_code, 302)
+
+
+class NotificationPopupTests(TestCase):
+    """NEU: neue Mitteilungen poppen bei «Deine Uploads» auf"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+        Notification.objects.create(user=self.anna, text="Deine Aktivität wurde freigegeben.")
+
+    def test_badge_on_uploads_and_popup_once(self):
+        self.assertContains(self.client.get(reverse("activities")), "Neue Mitteilungen")
+        page = self.client.get(reverse("my_uploads"))
+        self.assertContains(page, 'id="newsModal"')
+        self.assertContains(page, "Deine Aktivität wurde freigegeben.")
+        # beim nächsten Mal nicht mehr
+        self.assertNotContains(self.client.get(reverse("my_uploads")), 'id="newsModal"')
+        self.assertNotContains(self.client.get(reverse("activities")), "Neue Mitteilungen")
+
+    def test_detail_has_lightbox(self):
+        location = Location.objects.create(city="Épinal")
+        activity = Activity.objects.create(user=self.anna, location=location, title="X", description="x",
+                                           status="published", image="activities/a.jpg")
+        page = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        self.assertContains(page, 'id="photoViewer"')
+
+
+class ContactReplyTests(TestCase):
+    """NEU: auf Kontaktnachrichten per E-Mail antworten"""
+
+    def test_reply_link_in_admin(self):
+        admin_user = User.objects.create_superuser("chefin", "c@test.ch", "geheim12345")
+        ContactMessage.objects.create(name="Lea", email="lea@test.ch", topic="question", message="Wann offen?")
+        self.client.force_login(admin_user)
+        page = self.client.get(reverse("admin:guide_contactmessage_changelist"))
+        self.assertContains(page, "mailto:lea@test.ch?subject=")
+        self.assertContains(page, "Antworten")
+
+    def test_contact_form_says_answer_by_email(self):
+        self.assertContains(self.client.get(reverse("contact")), "Meine Antwort kommt per E-Mail")
+
+
+class DistanceFilterTests(TestCase):
+    """NEU: Distanz-Filter (vom Bahnhof, vom Zentrum oder vom eigenen Standort)"""
+
+    def setUp(self):
+        anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+
+        def make(title, lat, lng):
+            location = Location.objects.create(city="Épinal", latitude=lat, longitude=lng)
+            return Activity.objects.create(user=anna, location=location, title=title, description="x",
+                                           status="published")
+        make("Beim Bahnhof", "48.1780", "6.4425")       # ein paar Meter vom Bahnhof
+        make("Basilique", "48.1726", "6.4495")          # knapp 1 km vom Bahnhof
+        make("Golbey", "48.1950", "6.4300")             # gut 2 km
+        make("Gérardmer", "48.0730", "6.8780")          # ca. 34 km
+        Activity.objects.create(user=anna, location=Location.objects.create(city="Épinal"),
+                                title="Ohne Koordinaten", description="x", status="published")
+
+    def titles(self, **params):
+        response = self.client.get(reverse("activities"), params)
+        return [a.title for a in response.context["activities"]], response
+
+    def test_from_station(self):
+        titles, response = self.titles(dist=1, **{"from": "gare"})
+        self.assertEqual(titles, ["Beim Bahnhof", "Basilique"])  # nächste zuerst
+        self.assertContains(response, "entfernt")
+        self.assertContains(response, "Distanz (bis 1 km)")
+
+    def test_bigger_radius(self):
+        titles, _ = self.titles(dist=10, **{"from": "gare"})
+        self.assertEqual(set(titles), {"Beim Bahnhof", "Basilique", "Golbey"})
+
+    def test_from_my_location(self):
+        titles, _ = self.titles(dist=1, lat="48.0731", lng="6.8781", **{"from": "me"})
+        self.assertEqual(titles, ["Gérardmer"])
+
+    def test_my_location_missing_or_invalid_means_no_filter(self):
+        titles, _ = self.titles(dist=1, **{"from": "me"})
+        self.assertEqual(len(titles), 5)
+        titles, _ = self.titles(dist=1, lat="quatsch", lng="1", **{"from": "me"})
+        self.assertEqual(len(titles), 5)
+
+    def test_unknown_distance_ignored(self):
+        titles, _ = self.titles(dist=7, **{"from": "gare"})
+        self.assertEqual(len(titles), 5)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class FrenchAndPhotoChoiceTests(TestCase):
+    """NEU: Französisch, Titelbild wählen, Bildausschnitt, eigene Fotos löschen"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.ben = User.objects.create_user("ben", "ben@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+
+    def data(self, **extra):
+        data = {"title": "Halle", "main_1": self.sport.pk, "description": "x", "address": "Rue 1", "city": "Épinal",
+                "latitude": "48.17", "longitude": "6.45", "price_level": "1",
+                "photos": [fake_photo("a.jpg"), fake_photo("b.jpg")]}
+        data.update(extra)
+        return data
+
+    def test_switch_to_french(self):
+        self.client.post("/i18n/setlang/", {"language": "fr", "next": "/activities/"})
+        page = self.client.get(reverse("activities"))
+        self.assertContains(page, "Toutes les activités")
+        self.assertContains(page, "Sport &amp; activité physique")  # Kategorie auf Französisch
+        self.assertContains(page, '<html lang="fr">')
+
+    def test_notification_in_both_languages(self):
+        admin = User.objects.create_user("chefin", "c@test.ch", "geheim12345", is_staff=True)
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        self.client.force_login(admin)
+        self.client.post(reverse("approve_activity", args=[activity.pk]))
+        note = Notification.objects.get(user=self.anna)
+        self.assertIn("freigegeben", note.text)
+        self.assertIn("validée", note.text_fr)
+
+    def test_choose_new_cover_and_position(self):
+        self.client.post(reverse("add_activity"), self.data(cover_choice="new:1", image_position="10% 80%"))
+        activity = Activity.objects.get()
+        self.assertIn("b", activity.image.name)
+        self.assertEqual(activity.image_position, "10% 80%")
+        self.assertEqual(activity.images.count(), 1)
+
+    def test_existing_photo_becomes_cover_old_cover_kept(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        old_cover = activity.image.name
+        other = activity.images.get()
+        self.client.post(reverse("edit_activity", args=[activity.pk]), self.data(photos=[], cover_choice=str(other.pk)))
+        activity.refresh_from_db()
+        self.assertNotEqual(activity.image.name, old_cover)
+        self.assertEqual([p.image.name for p in activity.images.all()], [old_cover])
+
+    def test_bad_position_ignored(self):
+        response = self.client.post(reverse("add_activity"), self.data(image_position="1;drop"))
+        self.assertEqual(response.status_code, 200)  # Formularfehler, nichts gespeichert
+        self.assertFalse(Activity.objects.exists())
+
+    def test_delete_only_own_photo(self):
+        self.client.post(reverse("add_activity"), self.data())
+        activity = Activity.objects.get()
+        Activity.objects.update(status="published")
+        photo = activity.images.get()
+        self.client.force_login(self.ben)
+        self.client.post(reverse("delete_photo", args=[photo.pk]))
+        self.assertTrue(activity.images.exists())
+        page = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        self.assertNotContains(page, reverse("delete_photo", args=[photo.pk]))
+        self.client.force_login(self.anna)
+        self.assertContains(self.client.get(reverse("activity_detail", args=[activity.pk])), reverse("delete_photo", args=[photo.pk]))
+        self.client.post(reverse("delete_photo", args=[photo.pk]))
+        self.assertFalse(activity.images.exists())
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA, DEEPL_API_KEY="test:fx")
+class AutoTranslateTests(TestCase):
+    """NEU: Beschreibungen und Bewertungen automatisch übersetzen (DeepL wird hier nur nachgeahmt)"""
+
+    def setUp(self):
+        self.anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        self.client.force_login(self.anna)
+        self.sport = Category.objects.get(name="Sport & Bewegung")
+
+    @staticmethod
+    def fake_deepl(texts, target):
+        # tut so, als wäre alles Deutsch, und hängt die Zielsprache an
+        return [(f"[{target}] {t}", "de") for t in texts]
+
+    def add(self):
+        from unittest import mock
+        with mock.patch("guide.translate.deepl_request", side_effect=self.fake_deepl):
+            self.client.post(reverse("add_activity"), {
+                "title": "Kletterhalle", "main_1": self.sport.pk, "description": "Klettern für alle",
+                "address": "Rue 1", "city": "Épinal", "latitude": "48.17", "longitude": "6.45",
+                "price_level": "1", "photos": fake_photo()})
+        activity = Activity.objects.get()
+        Activity.objects.update(status="published")
+        return activity
+
+    def test_activity_translated_on_save(self):
+        activity = self.add()
+        self.assertEqual(activity.source_lang, "de")
+        self.assertEqual(activity.description_tr, "[FR] Klettern für alle")
+        page = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        self.assertContains(page, "Klettern für alle")          # Deutsch: Original
+        self.client.post("/i18n/setlang/", {"language": "fr", "next": "/"})
+        page = self.client.get(reverse("activity_detail", args=[activity.pk]))
+        self.assertContains(page, "[FR] Klettern für alle")     # Französisch: Übersetzung
+        self.assertContains(page, "Traduit automatiquement avec DeepL")
+
+    def test_french_text_translated_to_german(self):
+        from unittest import mock
+        from .translate import translate_activity
+        activity = self.add()
+        activity.description = "Escalade pour tous"
+        calls = []
+
+        def fake(texts, target):
+            calls.append(target)
+            return [(f"[{target}] {t}", "fr") for t in texts]
+        with mock.patch("guide.translate.deepl_request", side_effect=fake):
+            translate_activity(activity)
+        self.assertEqual(calls, ["FR", "DE"])
+        self.assertEqual(activity.source_lang, "fr")
+        self.assertEqual(activity.description_tr, "[DE] Escalade pour tous")
+
+    def test_rating_translated(self):
+        from unittest import mock
+        activity = self.add()
+        with mock.patch("guide.translate.deepl_request", side_effect=self.fake_deepl):
+            self.client.post(reverse("review_activity", args=[activity.pk]), {
+                "rating": "5", "visited": __import__("guide.forms", fromlist=["x"]).last_12_months()[0][0], "title": "Super", "text": "Sehr cool", "confirm": "on"})
+        rating = Rating.objects.get()
+        self.assertEqual(rating.text_tr, "[FR] Sehr cool")
+
+    def test_deepl_error_saves_anyway(self):
+        from unittest import mock
+        with mock.patch("guide.translate.deepl_request", side_effect=OSError("offline")):
+            self.client.post(reverse("add_activity"), {
+                "title": "Halle", "main_1": self.sport.pk, "description": "x", "address": "Rue 1", "city": "Épinal",
+                "latitude": "48.17", "longitude": "6.45", "price_level": "1", "photos": fake_photo()})
+        activity = Activity.objects.get()
+        self.assertEqual(activity.source_lang, "")
+
+    @override_settings(DEEPL_API_KEY="")
+    def test_without_key_nothing_happens(self):
+        from .translate import translate_activity
+        location = Location.objects.create(city="Épinal")
+        activity = Activity.objects.create(user=self.anna, location=location, title="X", description="y")
+        self.assertFalse(translate_activity(activity))
+
+
+class OpenNowTests(TestCase):
+    """NEU: Filter «Jetzt geöffnet»"""
+
+    def setUp(self):
+        anna = User.objects.create_user("anna", "anna@test.ch", "geheim12345")
+        location = Location.objects.create(city="Épinal")
+
+        def make(title, hours):
+            return Activity.objects.create(user=anna, location=location, title=title, description="x",
+                                           status="published", opening_hours=hours)
+        self.cafe = make("Café", {"always_open": False, "days": {
+            "mo": {"closed": False, "slots": [["08:00", "12:00"], ["14:00", "18:00"]]},
+            "so": {"closed": True, "slots": []}}})
+        self.bar = make("Bar", {"always_open": False, "days": {"fr": {"closed": False, "slots": [["18:00", "02:00"]]}}})
+        self.tankstelle = make("Tankstelle", {"always_open": True, "days": {}})
+        self.park = make("Park", None)
+
+    def at(self, weekday_date, hhmm):
+        import datetime as dt
+        hour, minute = map(int, hhmm.split(":"))
+        return dt.datetime.combine(weekday_date, dt.time(hour, minute))
+
+    def test_is_open_at(self):
+        import datetime as dt
+        monday, saturday = dt.date(2026, 10, 19), dt.date(2026, 10, 24)
+        self.assertTrue(self.cafe.is_open_at(self.at(monday, "09:30")))
+        self.assertFalse(self.cafe.is_open_at(self.at(monday, "13:00")))    # Pause
+        self.assertFalse(self.cafe.is_open_at(self.at(monday, "18:00")))    # genau Ende
+        self.assertTrue(self.bar.is_open_at(self.at(dt.date(2026, 10, 23), "23:00")))  # Freitag
+        self.assertTrue(self.bar.is_open_at(self.at(saturday, "01:30")))    # nach Mitternacht
+        self.assertFalse(self.bar.is_open_at(self.at(saturday, "03:00")))
+        self.assertTrue(self.tankstelle.is_open_at(self.at(saturday, "04:00")))
+        self.assertIsNone(self.park.is_open_at(self.at(saturday, "04:00")))

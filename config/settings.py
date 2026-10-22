@@ -10,10 +10,24 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# NEU: geheime Werte aus der Datei .env lesen (steht in .gitignore, kommt also nicht auf GitHub).
+# Eine Zeile pro Wert, z.B.  DEEPL_API_KEY=abc123:fx
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding="utf-8").splitlines():
+        if "=" in _line and not _line.strip().startswith("#"):
+            _name, _value = _line.split("=", 1)
+            os.environ.setdefault(_name.strip(), _value.strip().strip('"'))
+
+# NEU: Schlüssel für DeepL (automatische Übersetzung von Beschreibungen und Bewertungen).
+# Leer = keine Übersetzung, die Website funktioniert trotzdem.
+DEEPL_API_KEY = os.environ.get("DEEPL_API_KEY", "")
 
 
 # Quick-start development settings - unsuitable for production
@@ -43,6 +57,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',  # NEU: Sprache DE/FR (nach Session, vor Common)
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -63,7 +78,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'guide.context_processors.moderation',  # NEU: Zahl "zu prüfen" für den Admin
+                'guide.context_processors.moderation',
+                'guide.context_processors.notifications',  # NEU: Zahl "zu prüfen" für den Admin
             ],
         },
     },
@@ -106,6 +122,14 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
 LANGUAGE_CODE = 'de'
+
+# NEU: Website auf Deutsch und Französisch. Der Knopf «DE / FR» merkt sich die Wahl in einem Cookie.
+# Die Übersetzungen stehen in locale/fr/LC_MESSAGES/django.po (und kompiliert in django.mo).
+LANGUAGES = [
+    ("de", "Deutsch"),
+    ("fr", "Français"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 
 TIME_ZONE = 'Europe/Zurich'
 

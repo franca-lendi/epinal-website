@@ -1,0 +1,22 @@
+{% extends "guide/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Mitteilungen" %} – Épinal Guide{% endblock %}
+
+{% block content %}
+<!-- NEU: Mitteilungen, z.B. wenn eine Aktivität freigegeben oder zurückgeschickt wurde -->
+<div class="mx-auto" style="max-width: 720px;">
+    <h1 class="mb-4">{% translate "Mitteilungen" %}</h1>
+    {% for item in items %}
+        <div class="notif-item {% if item.pk in unread_ids %}is-new{% endif %}">
+            <div class="d-flex justify-content-between gap-3">
+                <p class="mb-1">{% if item.pk in unread_ids %}<span class="notif-dot" aria-label="{% translate "neu" %}"></span>{% endif %}{{ item.display_text }}</p>
+                <span class="text-muted small text-nowrap">{{ item.created_at|date:"j. M, H:i" }}</span>
+            </div>
+            {% if item.link %}<a href="{{ item.link }}" class="small">{% translate "Ansehen" %}</a>{% endif %}
+        </div>
+    {% empty %}
+        <p class="text-muted">{% translate "Noch keine Mitteilungen. Hier steht zum Beispiel, wenn deine Aktivität freigegeben wurde." %}</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,13 +1,14 @@
 {# Eine Aktivität auf der Seite «Prüfen» #}
+{% load i18n %}
 <div class="moderation-item">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
         <div class="moderation-text">
             <a href="{% url 'activity_detail' activity.pk %}" class="fw-bold text-decoration-none">{{ activity.title }}</a>
             <div class="mb-1">
-                {% for category in activity.categories.all %}<span class="badge bg-success me-1">{{ category.label }}</span>{% endfor %}
+                {% for category in activity.categories.all %}<span class="badge cat-badge me-1">{{ category.label }}</span>{% endfor %}
             </div>
             <div class="small text-muted">
-                von {{ activity.user.username }} · {{ activity.created_at|date:"j. F Y, H:i" }} · {{ activity.location }}
+                {% blocktranslate with user=activity.user.username %}von {{ user }}{% endblocktranslate %} · {{ activity.created_at|date:"j. F Y, H:i" }} · {{ activity.location }}
             </div>
             <p class="small mb-0 mt-1">{{ activity.description|truncatechars:160 }}</p>
             {% if show_reports %}
@@ -20,12 +21,26 @@
                 {% endfor %}
             {% endif %}
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-secondary btn-sm">Ansehen</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'activity_detail' activity.pk %}" class="btn btn-outline-secondary btn-sm">{% translate "Ansehen" %}</a>
+            <!-- NEU: Zurückschicken öffnet darunter ein Feld für den Grund -->
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse"
+                    data-bs-target="#return{{ activity.pk }}" aria-expanded="false">
+                <i class="bi bi-arrow-return-left me-1"></i>{% translate "Zurückschicken" %}
+            </button>
             <form method="post" action="{% url 'approve_activity' activity.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Freigeben</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-lg me-1"></i>{% translate "Freigeben" %}</button>
             </form>
         </div>
     </div>
+    <form method="post" action="{% url 'return_activity' activity.pk %}" class="collapse mt-3" id="return{{ activity.pk }}">
+        {% csrf_token %}
+        <label for="returnText{{ activity.pk }}" class="form-label small mb-1">
+            {% blocktranslate trimmed with user=activity.user.username %}Was soll {{ user }} ändern? Das bekommt die Person als Mitteilung.{% endblocktranslate %}
+        </label>
+        <textarea name="message" id="returnText{{ activity.pk }}" class="form-control form-control-sm" rows="2" required
+                  placeholder="{% translate "z.B. Das Foto zeigt nicht den Ort. Bitte ein eigenes Foto hochladen." %}"></textarea>
+        <button type="submit" class="btn btn-dark btn-sm mt-2"><i class="bi bi-send me-1"></i>{% translate "Zurückschicken" %}</button>
+    </form>
 </div>

@@ -1,6 +1,7 @@
 {% extends "guide/base.html" %} <!-- aufbauen darauf -->
+{% load i18n %}
 
-{% block title %}Aktivitäten – Épinal Guide{% endblock %} <!-- gleiche da -->
+{% block title %}{% translate "Aktivitäten" %} – Épinal Guide{% endblock %} <!-- gleiche da -->
 
 {% block content %} <!-- jetzt rein wo zwischen main bei base steht -->
 
@@ -9,7 +10,7 @@
     <!-- Erfolgsmeldungen zeigt jetzt base.html für alle Seiten an -->
 
     <!-- Suche und Filter sind EIN Formular mit method="get":
-         beim Abschicken landen die Eingaben in der Adresse, z.B. /activities/?q=park&max_price=20
+         beim Abschicken landen die Eingaben in der Adresse, z.B. /activities/?q=park&price=2
          und die View filtert danach. So kann man eine gefilterte Liste auch als Link teilen. -->
     <form method="get" action="{% url 'activities' %}" id="filterForm">
     <!-- gewählte Ansicht (Kacheln/Tabelle/Karte) beim Suchen und Filtern behalten -->
@@ -27,15 +28,15 @@
                     name="q"
                     value="{{ query }}"
                     class="form-control border-start-0"
-                    placeholder="Suche nach Aktivitäten, Orten …"
-                    aria-label="Suche nach Aktivitäten"
+                    placeholder="{% translate "Suche nach Aktivitäten, Orten …" %}"
+                    aria-label="{% translate "Suche nach Aktivitäten" %}"
                 > <!-- name="q" = so heisst die Suche in der Adresse, Enter schickt ab -->
-                <button type="submit" class="btn btn-primary px-4">Suchen</button>
+                <button type="submit" class="btn btn-outline-secondary px-4">{% translate "Suchen" %}</button>
             </div>
         </div>
         <div class="col-12 col-md-auto">
             <a href="{% url 'add_activity' %}" class="btn btn-outline-primary btn-lg w-100">
-                <i class="bi bi-plus-lg me-1"></i> Füge deine Aktivität hinzu
+                <i class="bi bi-plus-lg me-1"></i> {% translate "Füge deine Aktivität hinzu" %}
             </a>
         </div>
     </div>
@@ -51,7 +52,7 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#kategorieFilter"
             > <!-- bootstrap auf und zu klappen, sucht nach element mit dieser id -->
-                Kategorie{% if active.category %} ({{ active.category }}){% endif %}<i class="bi bi-chevron-down"></i>
+                {% translate "Kategorie" %}{% if active.category %} ({{ active.category }}){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="kategorieFilter"> <!-- das hier aufklappen -->
@@ -66,13 +67,13 @@
                                    value="{{ main.id }}" id="cat{{ main.id }}"
                                    {% if main.id|stringformat:"s" in selected_categories %}checked{% endif %}>
                             <label class="form-check-label" for="cat{{ main.id }}">
-                                {{ main.name }} <span class="text-muted">({{ main.activity_count }})</span>
+                                {{ main.display_name }} <span class="text-muted">({{ main.activity_count }})</span>
                             </label>
                             {% if main.subs %}
                                 <button type="button" class="cat-toggle {% if not main.open %}collapsed{% endif %}"
                                         data-bs-toggle="collapse" data-bs-target="#subs{{ main.id }}"
                                         aria-expanded="{% if main.open %}true{% else %}false{% endif %}"
-                                        aria-label="Unterkategorien von {{ main.name }} zeigen">
+                                        aria-label="{% blocktranslate trimmed with name=main.display_name %}Unterkategorien von {{ name }} zeigen{% endblocktranslate %}">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
                             {% endif %}
@@ -85,7 +86,7 @@
                                                value="{{ sub.id }}" id="cat{{ sub.id }}" data-parent="{{ main.id }}"
                                                {% if sub.id|stringformat:"s" in selected_categories %}checked{% endif %}>
                                         <label class="form-check-label" for="cat{{ sub.id }}">
-                                            {{ sub.name }} <span class="text-muted">({{ sub.activity_count }})</span>
+                                            {{ sub.display_name }} <span class="text-muted">({{ sub.activity_count }})</span>
                                         </label>
                                     </div>
                                 {% endfor %}
@@ -105,22 +106,22 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#datumFilter"
             >
-                Datum{% if active.date %} (1){% endif %}<i class="bi bi-chevron-down"></i>
+                {% translate "Datum" %}{% if active.date %} (1){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="datumFilter">
                 <div class="border rounded p-3 filter-box">
 
-                    <label for="dateFrom" class="form-label small text-muted">Von</label>
+                    <label for="dateFrom" class="form-label small text-muted">{% translate "Von" %}</label>
                     <input type="date" name="date_from" id="dateFrom" class="form-control mb-2"
                            value="{{ date_from|date:'Y-m-d' }}">
                     <!-- type datumsfeld -->
 
-                    <label for="dateTo" class="form-label small text-muted">Bis</label>
+                    <label for="dateTo" class="form-label small text-muted">{% translate "Bis" %}</label>
                     <input type="date" name="date_to" id="dateTo" class="form-control"
                            value="{{ date_to|date:'Y-m-d' }}">
 
-                    <p class="form-text mb-0 mt-2">Aktivitäten ohne festes Datum werden immer angezeigt.</p>
+                    <p class="form-text mb-0 mt-2">{% translate "Aktivitäten ohne festes Datum werden immer angezeigt." %}</p>
                 </div>
             </div>
         </div>
@@ -134,29 +135,23 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#preisFilter"
             >
-                Preis{% if active.price %} (bis {{ max_price }} €){% endif %}<i class="bi bi-chevron-down"></i>
+                {% translate "Preis" %}{% if active.price %} ({{ price_label }}){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
 
             <div class="collapse mt-2" id="preisFilter">
                 <div class="border rounded p-3 filter-box">
 
-                    <label for="priceRange" class="form-label small">
-                        Höchstens: <strong id="priceValue"></strong>
-                    </label>
-                    <input
-                        type="range"
-                        name="max_price"
-                        id="priceRange"
-                        class="form-range"
-                        min="0"
-                        max="{{ price_max }}"
-                        step="5"
-                        value="{{ max_price }}"
-                    >
-                    <!-- type schiebeding, form-range bootstrap, ganz rechts = egal -->
-                    <div class="d-flex justify-content-between small text-muted"> <!-- möglichst weit auseinander -->
-                        <span>Gratis</span>
-                        <span>{{ price_max }} € +</span>
+                    <!-- NEU: Preis als Stufen. «bis 20 €» zeigt auch Gratis und bis 10 €. -->
+                    <div class="small text-muted mb-2">{% translate "Höchstens" %}</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="radio" class="btn-check" name="price" value="" id="price_any" autocomplete="off"
+                               {% if price is None %}checked{% endif %}>
+                        <label class="pill pill-sm" for="price_any">{% translate "Egal" %}</label>
+                        {% for value, label in price_filter %}
+                            <input type="radio" class="btn-check" name="price" value="{{ value }}" id="price_{{ value }}"
+                                   autocomplete="off" {% if price == value %}checked{% endif %}>
+                            <label class="pill pill-sm" for="price_{{ value }}">{{ label }}</label>
+                        {% endfor %}
                     </div>
 
                 </div>
@@ -164,19 +159,51 @@
         </div>
 
 
-        <!-- Distanz: braucht Koordinaten bei den Aktivitäten, kommt später -->
+        <!-- NEU: Distanz. Von meinem Standort (fragt der Browser) oder vom Bahnhof / Zentrum aus. -->
         <div class="col-6 col-lg">
-            <button class="btn btn-outline-secondary w-100 filter-btn" type="button" disabled
-                    title="Kommt, sobald die Aktivitäten Koordinaten haben">
-                Distanz<i class="bi bi-chevron-down"></i>
+            <button
+                class="btn {% if active.distance %}btn-dark{% else %}btn-outline-secondary{% endif %} w-100 filter-btn"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#distanzFilter"
+            >
+                {% translate "Distanz" %}{% if active.distance %} ({% blocktranslate trimmed %}bis {{ dist }} km{% endblocktranslate %}){% endif %}<i class="bi bi-chevron-down"></i>
             </button>
+
+            <div class="collapse mt-2" id="distanzFilter">
+                <div class="border rounded p-3 filter-box">
+                    <div class="small text-muted mb-2">{% translate "Von wo aus?" %}</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="radio" class="btn-check" name="from" value="me" id="from_me" autocomplete="off" {% if origin == "me" %}checked{% endif %}>
+                        <label class="pill pill-sm" for="from_me"><i class="bi bi-crosshair me-1"></i>{% translate "Mein Standort" %}</label>
+                        <input type="radio" class="btn-check" name="from" value="gare" id="from_gare" autocomplete="off" {% if origin == "gare" %}checked{% endif %}>
+                        <label class="pill pill-sm" for="from_gare">{% translate "Bahnhof" %}</label>
+                        <input type="radio" class="btn-check" name="from" value="centre" id="from_centre" autocomplete="off" {% if origin == "centre" %}checked{% endif %}>
+                        <label class="pill pill-sm" for="from_centre">{% translate "Zentrum (Place des Vosges)" %}</label>
+                    </div>
+                    <!-- Standort aus dem Browser (wird nicht gespeichert) -->
+                    <input type="hidden" name="lat" id="userLat" value="{% if origin == 'me' %}{{ user_lat }}{% endif %}">
+                    <input type="hidden" name="lng" id="userLng" value="{% if origin == 'me' %}{{ user_lng }}{% endif %}">
+                    <div class="small text-danger mt-2 d-none" id="locationHint"></div>
+
+                    <div class="small text-muted mt-3 mb-2">{% translate "Höchstens" %}</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <input type="radio" class="btn-check" name="dist" value="" id="dist_any" autocomplete="off" {% if not dist %}checked{% endif %}>
+                        <label class="pill pill-sm" for="dist_any">{% translate "Egal" %}</label>
+                        {% for km in dist_choices %}
+                            <input type="radio" class="btn-check" name="dist" value="{{ km }}" id="dist_{{ km }}" autocomplete="off" {% if dist == km %}checked{% endif %}>
+                            <label class="pill pill-sm" for="dist_{{ km }}">{{ km }} km</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
 
         <!-- Anwenden -->
         <div class="col-12 col-lg-auto"> <!-- so viel wie braucht -->
             <button type="submit" class="btn btn-primary w-100">
-                Anwenden
+                {% translate "Anwenden" %}
             </button>
         </div>
 
@@ -189,13 +216,13 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mt-4 mb-3">
         <h2 class="mb-0">
-            {% if any_filter %}Suchergebnisse{% else %}Alle Aktivitäten{% endif %}
+            {% if any_filter %}{% translate "Suchergebnisse" %}{% else %}{% translate "Alle Aktivitäten" %}{% endif %}
             <small class="text-muted fs-6">({{ activities|length }})</small>
         </h2>
         <div class="d-flex flex-wrap align-items-center gap-3">
             {% if any_filter %}
                 <!-- Seite ohne Filter laden, aber die Ansicht behalten -->
-                <a href="{% url 'activities' %}{% if view != 'cards' %}?view={{ view }}{% endif %}" class="link-secondary small"><i class="bi bi-x-circle me-1"></i>Alle Filter zurücksetzen</a>
+                <a href="{% url 'activities' %}{% if view != 'cards' %}?view={{ view }}{% endif %}" class="link-secondary small"><i class="bi bi-x-circle me-1"></i>{% translate "Alle Filter zurücksetzen" %}</a>
             {% endif %}
             {% include "guide/_view_switch.html" with no_table=True %}
         </div>
@@ -203,9 +230,9 @@
 
     {% if not activities %}
         {% if any_filter %}
-            <p class="text-muted">Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern.</p>
+            <p class="text-muted">{% translate "Keine Aktivität passt zu deiner Suche. Versuch es mit weniger Filtern." %}</p>
         {% else %}
-            <p>Noch keine Aktivitäten vorhanden.</p>
+            <p>{% translate "Noch keine Aktivitäten vorhanden." %}</p>
         {% endif %}
 
     {% elif view == "map" %}
@@ -224,6 +251,10 @@
 
 {% block scripts %}
 <script>
+// Übersetzte Texte für das Skript (escapejs: sicher auch mit Apostrophen im Französischen)
+const T_NO_GEO = "{% autoescape off %}{% filter escapejs %}{% translate "Dein Browser kann den Standort nicht teilen. Wähle Bahnhof oder Zentrum." %}{% endfilter %}{% endautoescape %}";
+const T_GEO_FAILED = "{% autoescape off %}{% filter escapejs %}{% translate "Standort nicht verfügbar. Erlaube ihn im Browser oder wähle Bahnhof oder Zentrum." %}{% endfilter %}{% endautoescape %}";
+
 // NEU: Kategorie-Filter. Hauptkategorie an/aus = alle ihre Unterkategorien an/aus.
 // Nimmt man eine Unterkategorie weg, ist die Hauptkategorie nicht mehr ganz gewählt.
 document.addEventListener("DOMContentLoaded", function () {
@@ -242,20 +273,38 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// Preis neben dem Schieberegler anzeigen (ganz rechts = "egal")
-document.addEventListener("DOMContentLoaded", function () {
-    const range = document.getElementById("priceRange");
-    const label = document.getElementById("priceValue");
-    const max = Number(range.max);
 
-    function show() {
-        const value = Number(range.value);
-        if (value >= max) label.textContent = "egal";
-        else if (value === 0) label.textContent = "nur gratis";
-        else label.textContent = value + " €";
+// NEU: Distanz von meinem Standort. Beim Anwenden fragt der Browser nach dem Standort (wird nicht gespeichert).
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("filterForm");
+    const lat = document.getElementById("userLat");
+    const lng = document.getElementById("userLng");
+    const hint = document.getElementById("locationHint");
+    let located = false;
+
+    function showHint(text) {
+        hint.textContent = text;
+        hint.classList.remove("d-none");
+        document.getElementById("distanzFilter").classList.add("show");
     }
-    range.addEventListener("input", show);
-    show();
+    form.addEventListener("submit", function (e) {
+        const from = form.querySelector('input[name="from"]:checked');
+        const dist = form.querySelector('input[name="dist"]:checked');
+        if (!dist || !dist.value || !from || from.value !== "me" || located) return;
+        e.preventDefault();
+        if (!navigator.geolocation) {
+            showHint(T_NO_GEO);
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(function (position) {
+            lat.value = position.coords.latitude.toFixed(5);
+            lng.value = position.coords.longitude.toFixed(5);
+            located = true;
+            form.requestSubmit();
+        }, function () {
+            showHint(T_GEO_FAILED);
+        }, { timeout: 10000, maximumAge: 300000 });
+    });
 });
 </script>
 {% endblock %}

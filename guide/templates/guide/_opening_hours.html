@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Öffnungszeiten pro Wochentag. Was man beim ersten Tag eingibt, wird für die anderen Tage übernommen,
 solange man diese noch nicht selbst geändert hat. «Mit Pause» zeigt eine zweite Zeit (z.B. 9–12 und 14–18).
@@ -9,7 +10,7 @@ solange man diese noch nicht selbst geändert hat. «Mit Pause» zeigt eine zwei
 </div>
 
 <div id="hoursGrid" {% if form.hours_always.value %}class="d-none"{% endif %}>
-    <p class="form-text mt-0">Gib zuerst einen Tag ein, die Zeiten werden für die anderen Tage übernommen. Danach kannst du jeden Tag einzeln anpassen.</p>
+    <p class="form-text mt-0">{% translate "Gib zuerst einen Tag ein, die Zeiten werden für die anderen Tage übernommen. Danach kannst du jeden Tag einzeln anpassen." %}</p>
 
     {% for day in form.hours_days %}
         <div class="hours-day" data-day="{{ day.code }}">
@@ -21,18 +22,18 @@ solange man diese noch nicht selbst geändert hat. «Mit Pause» zeigt eine zwei
                 </div>
                 <div class="hours-slot hours-slot2 {% if not day.has_pause %}d-none{% endif %}">
                     {{ day.open2 }} <span class="text-muted">–</span> {{ day.close2 }}
-                    <button type="button" class="btn btn-sm btn-link text-muted hours-remove-pause" aria-label="Pause entfernen">
+                    <button type="button" class="btn btn-sm btn-link text-muted hours-remove-pause" aria-label="{% translate "Pause entfernen" %}">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
                 <button type="button" class="btn btn-sm btn-link p-0 hours-add-pause {% if day.has_pause %}d-none{% endif %}">
-                    <i class="bi bi-plus-lg me-1"></i>Mit Pause
+                    <i class="bi bi-plus-lg me-1"></i>{% translate "Mit Pause" %}
                 </button>
             </div>
 
             <div class="form-check hours-closed-check">
                 {{ day.closed }}
-                <label class="form-check-label" for="{{ day.closed.id_for_label }}">geschlossen</label>
+                <label class="form-check-label" for="{{ day.closed.id_for_label }}">{% translate "geschlossen" %}</label>
             </div>
 
             {% for error in day.errors %}<div class="text-danger small hours-error">{{ error }}</div>{% endfor %}

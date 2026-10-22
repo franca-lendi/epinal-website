@@ -1,0 +1,62 @@
+{% extends "guide/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Mein Profil" %} – Épinal Guide{% endblock %}
+
+{% block content %}
+<!-- NEU: Mein Profil -->
+<div class="mx-auto" style="max-width: 720px;">
+    <h1 class="mb-1">{% translate "Mein Profil" %}</h1>
+    <p class="text-muted mb-4">{% blocktranslate with date=user.date_joined|date:"F Y" %}Dabei seit {{ date }}{% endblocktranslate %}</p>
+
+    <!-- ein paar Zahlen, jede führt zur passenden Seite -->
+    <div class="profile-stats mb-4">
+        <a href="{% url 'my_uploads' %}" class="profile-stat">
+            <span class="profile-stat-number">{{ stats.uploads }}</span>
+            <span class="profile-stat-label">{% translate "Uploads" %}{% if stats.uploads %}, {% blocktranslate with published=stats.published %}{{ published }} online{% endblocktranslate %}{% endif %}</span>
+        </a>
+        <div class="profile-stat">
+            <span class="profile-stat-number">{{ stats.reviews }}</span>
+            <span class="profile-stat-label">{% if stats.reviews == 1 %}{% translate "Bewertung" context "Profil" %}{% else %}{% translate "Bewertungen" context "Profil" %}{% endif %}</span>
+        </div>
+        <a href="{% url 'favorites' %}" class="profile-stat">
+            <span class="profile-stat-number">{{ stats.favorites }}</span>
+            <span class="profile-stat-label">{% if stats.favorites == 1 %}{% translate "Favorit" context "Profil" %}{% else %}{% translate "Favoriten" context "Profil" %}{% endif %}</span>
+        </a>
+    </div>
+
+    <div class="profile-box mb-4">
+        <h2 class="h5 mb-3">{% translate "Deine Angaben" %}</h2>
+        <form method="post">
+            {% csrf_token %}
+            {% include "guide/_field.html" with field=profile_form.username %}
+            {% include "guide/_field.html" with field=profile_form.email %}
+            <button type="submit" name="save_profile" class="btn btn-dark rounded-pill px-4">{% translate "Speichern" %}</button>
+        </form>
+    </div>
+
+    <div class="profile-box mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">{% translate "Passwort" %}</h2>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse"
+                    data-bs-target="#passwordBox" aria-expanded="{{ show_password|yesno:'true,false' }}">{% translate "Passwort ändern" %}</button>
+        </div>
+        <form method="post" id="passwordBox" class="collapse mt-3 {% if show_password %}show{% endif %}">
+            {% csrf_token %}
+            {% for field in password_form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" name="save_password" class="btn btn-dark rounded-pill px-4">{% translate "Passwort ändern" %}</button>
+        </form>
+    </div>
+
+    <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">{% translate "Abmelden" %}</button>
+    </form>
+</div>
+{% endblock %}

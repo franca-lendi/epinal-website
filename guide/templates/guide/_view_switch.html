@@ -1,25 +1,26 @@
+{% load i18n %}
 {% comment %}
 Umschalter Kacheln / Tabelle / Karte. Wird auf Aktivitäten, Favoriten und Deine Uploads eingebunden.
 Das querystring-Tag (gibt es seit Django 5.1) übernimmt die restliche Adresse, z.B. Suche und Filter,
 und ändert nur "view". page=None: beim Wechseln wieder auf Seite 1.
 Mit "no_table=True" beim include gibt es keinen Tabellen-Knopf (Aktivitäten).
 {% endcomment %}
-<div class="btn-group btn-group-sm view-switch" role="group" aria-label="Ansicht">
+<div class="btn-group btn-group-sm view-switch" role="group" aria-label="{% translate "Ansicht" %}">
     <a href="{% querystring view='cards' page=None %}"
-       class="btn {% if view == 'cards' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       class="btn {% if view == 'cards' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
        {% if view == 'cards' %}aria-current="true"{% endif %}>
-        <i class="bi bi-grid me-1"></i>Kacheln
+        <i class="bi bi-grid me-1"></i>{% translate "Kacheln" %}
     </a>
     {% if not no_table %}
     <a href="{% querystring view='table' page=None %}"
-       class="btn {% if view == 'table' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       class="btn {% if view == 'table' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
        {% if view == 'table' %}aria-current="true"{% endif %}>
-        <i class="bi bi-list-ul me-1"></i>Tabelle
+        <i class="bi bi-list-ul me-1"></i>{% translate "Tabelle" %}
     </a>
     {% endif %}
     <a href="{% querystring view='map' page=None %}"
-       class="btn {% if view == 'map' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       class="btn {% if view == 'map' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
        {% if view == 'map' %}aria-current="true"{% endif %}>
-        <i class="bi bi-map me-1"></i>Karte
+        <i class="bi bi-map me-1"></i>{% translate "Karte" %}
     </a>
 </div>

@@ -1,13 +1,14 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Favoriten – Épinal Guide{% endblock %}
+{% block title %}{% translate "Favoriten" %} – Épinal Guide{% endblock %}
 
 {% block content %}
 
 <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
     <div>
-        <h1>Favoriten</h1>
-        <p class="text-muted mb-0">Hier findest du deine gespeicherten Aktivitäten.</p>
+        <h1>{% translate "Favoriten" %}</h1>
+        <p class="text-muted mb-0">{% translate "Hier findest du deine gespeicherten Aktivitäten." %}</p>
     </div>
     {% if activities %}{% include "guide/_view_switch.html" %}{% endif %}
 </div>
@@ -16,9 +17,9 @@
 <div data-favorites-page>
     {% if not activities %}
         <div class="text-center text-muted py-5">
-            <div class="display-4 mb-3">♡</div>
-            <p>Du hast noch keine Favoriten. Tippe bei einer Aktivität auf das Herz, um sie hier zu speichern.</p>
-            <a href="{% url 'activities' %}" class="btn btn-outline-primary">Aktivitäten entdecken</a>
+            <div class="display-4 mb-3"><i class="bi bi-heart"></i></div>
+            <p>{% translate "Du hast noch keine Favoriten. Tippe bei einer Aktivität auf das Herz, um sie hier zu speichern." %}</p>
+            <a href="{% url 'activities' %}" class="btn btn-outline-primary">{% translate "Aktivitäten entdecken" %}</a>
         </div>
 
     {% elif view == "table" %}

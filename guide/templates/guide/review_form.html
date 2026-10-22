@@ -1,22 +1,23 @@
 {% extends "guide/base.html" %}
+{% load i18n %}
 
-{% block title %}Bewerten: {{ activity.title }} – Épinal Guide{% endblock %}
+{% block title %}{% blocktranslate with title=activity.display_title %}Bewerten: {{ title }}{% endblocktranslate %} – Épinal Guide{% endblock %}
 
 {% block content %}
 <div class="row g-5 review-page">
 
     <!-- Links: grosse Frage und die Aktivität -->
     <div class="col-lg-4">
-        <h1 class="review-question">Also, wie war dein Besuch?</h1>
+        <h1 class="review-question">{% translate "Also, wie war dein Besuch?" %}</h1>
 
         <div class="card mt-4 review-target">
             {% if activity.image %}
-                <img src="{{ activity.image.url }}" class="card-img-top" alt="{{ activity.title }}">
+                <img src="{{ activity.image.url }}" class="card-img-top" alt="{{ activity.display_title }}">
             {% else %}
                 <div class="card-img-top img-placeholder"><i class="bi bi-image"></i></div>
             {% endif %}
             <div class="card-body">
-                <h2 class="h6 mb-1">{{ activity.title }}</h2>
+                <h2 class="h6 mb-1">{{ activity.display_title }}</h2>
                 <p class="small text-muted mb-0">{{ activity.location }}</p>
             </div>
         </div>
@@ -30,13 +31,13 @@
             <!-- 5 Sterne: jeder Stern ist ein Radio-Button (1 bis 5), das JavaScript unten füllt sie -->
             <div class="mb-5">
                 <p class="fw-semibold mb-2">{{ form.rating.label }}</p>
-                <div class="rating-stars" role="radiogroup" aria-label="Sterne">
+                <div class="rating-stars" role="radiogroup" aria-label="{% translate "Sterne" %}">
                     {% for choice in form.rating %}
                         <input type="radio" class="btn-check" name="{{ choice.data.name }}"
                                id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
                                {% if choice.data.selected %}checked{% endif %}>
-                        <label for="{{ choice.id_for_label }}" title="{{ choice.choice_label }} von 5"
-                               aria-label="{{ choice.choice_label }} von 5">★</label>
+                        <label for="{{ choice.id_for_label }}" title="{% blocktranslate with n=choice.choice_label %}{{ n }} von 5{% endblocktranslate %}"
+                               aria-label="{% blocktranslate with n=choice.choice_label %}{{ n }} von 5{% endblocktranslate %}">★</label>
                     {% endfor %}
                     <span class="rating-text ms-3 text-muted" id="ratingText"></span>
                 </div>
@@ -59,7 +60,7 @@
             <!-- Text -->
             <div class="mb-5">
                 <label for="{{ form.text.id_for_label }}" class="fw-semibold mb-2 d-block">
-                    {{ form.text.label }} <span class="text-muted small fw-normal">(optional)</span>
+                    {{ form.text.label }} <span class="text-muted small fw-normal">{% translate "(optional)" %}</span>
                 </label>
                 {{ form.text }}
                 {% for error in form.text.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
@@ -68,10 +69,10 @@
             <!-- Fotos (freiwillig) -->
             <div class="mb-5">
                 <label for="{{ form.photos.id_for_label }}" class="fw-semibold mb-2 d-block">
-                    {{ form.photos.label }} <span class="text-muted small fw-normal">(optional)</span>
+                    {{ form.photos.label }} <span class="text-muted small fw-normal">{% translate "(optional)" %}</span>
                 </label>
                 {{ form.photos }}
-                <div class="form-text">Bis zu 10 Fotos, je höchstens 10 MB. Nur eigene Fotos hochladen.</div>
+                <div class="form-text">{% translate "Bis zu 10 Fotos, je höchstens 10 MB. Nur eigene Fotos hochladen." %}</div>
                 {% for error in form.photos.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 <!-- kleine Vorschau der ausgewählten Fotos -->
                 <div class="photo-preview mt-2" id="photoPreview"></div>
@@ -86,11 +87,11 @@
             </div>
 
             <button type="submit" class="btn btn-dark rounded-pill w-100 py-3 fw-semibold">
-                {% if editing %}Bewertung speichern{% else %}Bewertung abgeben{% endif %}
+                {% if editing %}{% translate "Bewertung speichern" %}{% else %}{% translate "Bewertung abgeben" %}{% endif %}
             </button>
 
             <p class="text-center mt-3">
-                <a href="{% url 'activity_detail' activity.pk %}" class="link-secondary small">Später bewerten</a>
+                <a href="{% url 'activity_detail' activity.pk %}" class="link-secondary small">{% translate "Später bewerten" %}</a>
             </p>
         </form>
     </div>
@@ -99,9 +100,10 @@
 
 {% block scripts %}
 <script>
+{% translate "Schrecklich" as w1 %}{% translate "Mangelhaft" as w2 %}{% translate "Durchschnittlich" as w3 %}{% translate "Sehr gut" as w4 %}{% translate "Ausgezeichnet" as w5 %}
 document.addEventListener("DOMContentLoaded", function () {
     // Sterne bis zur gewählten Zahl füllen, beim Drüberfahren Vorschau zeigen
-    const words = {1: "Schrecklich", 2: "Mangelhaft", 3: "Durchschnittlich", 4: "Sehr gut", 5: "Ausgezeichnet"};
+    const words = {1: "{{ w1|escapejs }}", 2: "{{ w2|escapejs }}", 3: "{{ w3|escapejs }}", 4: "{{ w4|escapejs }}", 5: "{{ w5|escapejs }}"};
     const radios = document.querySelectorAll(".rating-stars input");
     const ratingText = document.getElementById("ratingText");
 
